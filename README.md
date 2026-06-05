@@ -90,3 +90,4 @@ cp frontend/.env.example frontend/.env.local
 ## License
 
 MIT — portfolio / learning use.
+# Job-boardtets
