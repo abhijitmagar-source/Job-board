@@ -81,6 +81,7 @@ cp frontend/.env.example frontend/.env.local
 - [Database Schema](docs/DATABASE_SCHEMA.md)
 - [API Overview](docs/API.md)
 - [Deployment Guide](docs/DEPLOYMENT.md)
+- [Phase 9: CI/CD](docs/phases/PHASE_9.md)
 
 ## Development Phases
 
