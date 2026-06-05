@@ -85,19 +85,11 @@ Base URL: `/api/v1/`
 
 `pending`, `reviewed`, `shortlisted`, `rejected`, `hired`
 
-## Companies
-
-| Method | Endpoint | Role | Description |
-|--------|----------|------|-------------|
-| GET | `/companies/` | Any | List |
-| POST | `/companies/` | Recruiter | Create own company |
-| GET/PATCH | `/companies/{id}/` | Owner | Detail / update |
-
 ## Profiles
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| GET/PATCH | `/profiles/me/` | Current user profile |
+| GET/PATCH | `/auth/profile/me/` | Current user profile |
 
 ## Standard responses
 
