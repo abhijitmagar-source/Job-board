@@ -24,7 +24,7 @@ if [[ ! -f .env.local ]]; then
 fi
 
 echo ""
-echo "Done. Next steps (after Phase 2 models):"
+echo "Done. Next steps:"
 echo "  cd backend && source .venv/bin/activate && python manage.py migrate"
 echo "  python manage.py runserver"
 echo "  cd frontend && npm run dev"

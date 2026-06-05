@@ -51,6 +51,16 @@ docker compose up --build
 # Frontend:   http://localhost:3000
 ```
 
+Browse jobs at http://localhost:3000/jobs — search, filter, apply, and manage listings from the UI.
+
+## Deploy frontend to Vercel
+
+1. Import the repo in Vercel with **Root Directory** = `frontend`
+2. Set `NEXT_PUBLIC_API_URL` to your production API
+3. Add the Vercel URL to backend `CORS_ALLOWED_ORIGINS`
+
+See [Deployment Guide](docs/DEPLOYMENT.md) for full details.
+
 With Nginx on port 80:
 
 ```bash
@@ -71,6 +81,7 @@ cp frontend/.env.example frontend/.env.local
 - [Database Schema](docs/DATABASE_SCHEMA.md)
 - [API Overview](docs/API.md)
 - [Deployment Guide](docs/DEPLOYMENT.md)
+- [Phase 9: CI/CD](docs/phases/PHASE_9.md)
 
 ## Development Phases
 
@@ -85,7 +96,7 @@ cp frontend/.env.example frontend/.env.local
 | 7 | Swagger documentation |
 | 8 | Dockerization |
 | 9 | GitHub Actions CI/CD |
-| 10 | Deployment guide |
+| 10 | Deployment (Vercel + EC2) |
 
 ## License
 
