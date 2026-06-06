@@ -23,8 +23,7 @@ import type {
 } from "@/types";
 
 const API_BASE =
-  process.env.NEXT_PUBLIC_API_URL || "https://job-board-api.onrender.com/api/v1";
-
+ process.env.NEXT_PUBLIC_API_URL || "https://job-board-gfnq.onrender.com/api/v1";
 export class ApiError extends Error {
   constructor(
     message: string,
