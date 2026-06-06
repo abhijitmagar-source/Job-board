@@ -3,19 +3,27 @@ from .base import *  # noqa: F403
 
 DEBUG = True
 
-# --- Database (PostgreSQL for CI) ---
+# --------------------
+# DATABASE (PostgreSQL CI)
+# --------------------
+import environ
+
+env = environ.Env()
+
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.postgresql",
-        "NAME": "jobboard_test",
-        "USER": "postgres",
-        "PASSWORD": "postgres",
-        "HOST": "127.0.0.1",
-        "PORT": "5432",
+        "NAME": env("POSTGRES_DB", default="jobboard_test"),
+        "USER": env("POSTGRES_USER", default="postgres"),
+        "PASSWORD": env("POSTGRES_PASSWORD", default="postgres"),
+        "HOST": env("POSTGRES_HOST", default="127.0.0.1"),
+        "PORT": env("POSTGRES_PORT", default="5432"),
     }
 }
 
-# --- Cache (no Redis needed in CI) ---
+# --------------------
+# CACHE (no Redis required for tests)
+# --------------------
 CACHES = {
     "default": {
         "BACKEND": "django.core.cache.backends.locmem.LocMemCache",

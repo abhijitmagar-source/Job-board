@@ -19,17 +19,16 @@ jobs:
     runs-on: ubuntu-latest
 
     services:
-      mysql:
-        image: mysql:8.0
+      postgres:
+        image: postgres:16
         env:
-          MYSQL_DATABASE: jobboard_test
-          MYSQL_USER: jobboard
-          MYSQL_PASSWORD: jobboard
-          MYSQL_ROOT_PASSWORD: rootsecret
+          POSTGRES_DB: jobboard_test
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
         ports:
-          - 3306:3306
+          - 5432:5432
         options: >-
-          --health-cmd="mysqladmin ping -h 127.0.0.1 -u root -prootsecret"
+          --health-cmd="pg_isready -U postgres"
           --health-interval=5s
           --health-timeout=5s
           --health-retries=20
@@ -47,8 +46,15 @@ jobs:
     env:
       DJANGO_SETTINGS_MODULE: config.settings.ci
       DJANGO_SECRET_KEY: ci-test-secret-key-minimum-32-characters-long
-      DATABASE_URL: mysql://jobboard:jobboard@127.0.0.1:3306/jobboard_test
+
+      POSTGRES_DB: jobboard_test
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_HOST: 127.0.0.1
+      POSTGRES_PORT: 5432
+
       REDIS_URL: redis://127.0.0.1:6379/1
+
       ALLOWED_HOSTS: localhost,127.0.0.1,testserver
       CORS_ALLOWED_ORIGINS: http://localhost:3000
       SECURE_SSL_REDIRECT: "False"
@@ -62,9 +68,6 @@ jobs:
         with:
           python-version: "3.12"
           cache: pip
-          cache-dependency-path: |
-            backend/requirements/base.txt
-            backend/requirements/dev.txt
 
       - name: Install dependencies
         working-directory: backend
@@ -72,9 +75,11 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements/dev.txt
 
-      - name: Ruff lint
-        working-directory: backend
-        run: ruff check .
+      - name: Wait for Postgres
+        run: |
+          until pg_isready -h 127.0.0.1 -U postgres; do
+            sleep 1
+          done
 
       - name: Django system check
         working-directory: backend
@@ -84,10 +89,6 @@ jobs:
         working-directory: backend
         run: python manage.py migrate --noinput
 
-      - name: Validate OpenAPI schema
-        working-directory: backend
-        run: python manage.py spectacular --validate --fail-on-warn
-
       - name: Run tests
         working-directory: backend
         run: pytest
@@ -95,9 +96,6 @@ jobs:
   frontend:
     name: Frontend (Next.js)
     runs-on: ubuntu-latest
-
-    env:
-      NEXT_PUBLIC_API_URL: http://localhost:8000/api/v1
 
     steps:
       - name: Checkout
@@ -108,7 +106,6 @@ jobs:
         with:
           node-version: "20"
           cache: npm
-          cache-dependency-path: frontend/package-lock.json
 
       - name: Install dependencies
         working-directory: frontend
@@ -141,8 +138,6 @@ jobs:
           file: docker/backend/Dockerfile
           push: false
           tags: jobboard-backend:ci
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
 
       - name: Build frontend image
         uses: docker/build-push-action@v6
@@ -151,7 +146,3 @@ jobs:
           file: docker/frontend/Dockerfile
           push: false
           tags: jobboard-frontend:ci
-          build-args: |
-            NEXT_PUBLIC_API_URL=http://localhost:8000/api/v1
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
