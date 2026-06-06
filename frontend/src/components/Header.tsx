@@ -11,7 +11,7 @@ const navLink =
 
 export function Header() {
   const { user, loading, logout } = useAuth();
-  const { theme, toggleTheme } = useTheme();
+  // const { theme, toggleTheme } = useTheme();
   const pathname = usePathname();
 
   return (
