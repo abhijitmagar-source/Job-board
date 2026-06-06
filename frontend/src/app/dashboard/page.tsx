@@ -61,26 +61,26 @@ export default function DashboardPage() {
         <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {isRecruiter && "jobs_total" in stats && (
             <>
-              <StatCard label="Total jobs" value={stats.jobs_total} />
-              <StatCard label="Active jobs" value={stats.jobs_active} />
-              <StatCard label="Companies" value={stats.companies_count} />
-              <StatCard label="Applicants" value={stats.applicants_total} />
+              <StatCard label="Total jobs" value={(stats as RecruiterDashboard).jobs_total} />
+              <StatCard label="Active jobs" value={(stats as RecruiterDashboard).jobs_active} />
+              <StatCard label="Companies" value={(stats as RecruiterDashboard).companies_count} />
+              <StatCard label="Applicants" value={(stats as RecruiterDashboard).applicants_total} />
             </>
           )}
           {!isRecruiter && !isAdmin && "applications_total" in stats && (
             <>
-              <StatCard label="Applications" value={stats.applications_total} />
-              <StatCard label="Pending" value={stats.applications_pending} />
-              <StatCard label="Shortlisted" value={stats.applications_shortlisted} />
-              <StatCard label="Saved jobs" value={stats.saved_jobs_count} />
+              <StatCard label="Applications" value={(stats as CandidateDashboard).applications_total} />
+              <StatCard label="Pending" value={(stats as CandidateDashboard).applications_pending} />
+              <StatCard label="Shortlisted" value={(stats as CandidateDashboard).applications_shortlisted} />
+              <StatCard label="Saved jobs" value={(stats as CandidateDashboard).saved_jobs_count} />
             </>
           )}
           {isAdmin && "users_total" in stats && (
             <>
-              <StatCard label="Users" value={stats.users_total} />
-              <StatCard label="Jobs" value={stats.jobs_total} />
-              <StatCard label="Companies" value={stats.companies_count} />
-              <StatCard label="Applications" value={stats.applications_total} />
+              <StatCard label="Users" value={(stats as AdminDashboard).users_total} />
+              <StatCard label="Jobs" value={(stats as AdminDashboard).jobs_total} />
+              <StatCard label="Companies" value={(stats as AdminDashboard).companies_count} />
+              <StatCard label="Applications" value={(stats as AdminDashboard).applications_total} />
             </>
           )}
         </div>
