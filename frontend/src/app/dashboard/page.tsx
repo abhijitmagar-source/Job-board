@@ -2,38 +2,98 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import { DashboardSkeleton } from "@/components/Skeleton";
 import { useAuth } from "@/context/AuthContext";
+import {
+  getAdminDashboard,
+  getCandidateDashboard,
+  getRecruiterDashboard,
+} from "@/lib/api";
+import { getUserDisplayName } from "@/types";
+import type { AdminDashboard, CandidateDashboard, RecruiterDashboard } from "@/types";
 
 export default function DashboardPage() {
   const { user, loading } = useAuth();
   const router = useRouter();
+  const [stats, setStats] = useState<
+    CandidateDashboard | RecruiterDashboard | AdminDashboard | null
+  >(null);
+  const [statsLoading, setStatsLoading] = useState(true);
 
   useEffect(() => {
-    if (!loading && !user) {
-      router.replace("/login");
-    }
+    if (!loading && !user) router.replace("/login");
   }, [user, loading, router]);
+
+  useEffect(() => {
+    if (!user) return;
+    const fetcher =
+      user.role === "recruiter"
+        ? getRecruiterDashboard
+        : user.role === "admin"
+          ? getAdminDashboard
+          : getCandidateDashboard;
+    fetcher()
+      .then(setStats)
+      .catch(() => {})
+      .finally(() => setStatsLoading(false));
+  }, [user]);
 
   if (loading || !user) {
     return (
-      <div className="mx-auto max-w-4xl px-4 py-12 text-center text-slate-500">
-        Loading…
+      <div className="mx-auto max-w-5xl px-4 py-8">
+        <DashboardSkeleton />
       </div>
     );
   }
 
   const isRecruiter = user.role === "recruiter";
+  const isAdmin = user.role === "admin";
 
   return (
-    <div className="mx-auto max-w-4xl px-4 py-8">
-      <h1 className="text-3xl font-bold text-slate-900">Dashboard</h1>
-      <p className="mt-2 text-slate-600">
-        Welcome back, {user.profile?.full_name ?? user.email}
+    <div className="mx-auto max-w-5xl px-4 py-8">
+      <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-100">Dashboard</h1>
+      <p className="mt-2 text-slate-600 dark:text-slate-400">
+        Welcome back, {getUserDisplayName(user)}
       </p>
 
+      {!statsLoading && stats && (
+        <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {isRecruiter && "jobs_total" in stats && (
+            <>
+              <StatCard label="Total jobs" value={stats.jobs_total} />
+              <StatCard label="Active jobs" value={stats.jobs_active} />
+              <StatCard label="Companies" value={stats.companies_count} />
+              <StatCard label="Applicants" value={stats.applicants_total} />
+            </>
+          )}
+          {!isRecruiter && !isAdmin && "applications_total" in stats && (
+            <>
+              <StatCard label="Applications" value={stats.applications_total} />
+              <StatCard label="Pending" value={stats.applications_pending} />
+              <StatCard label="Shortlisted" value={stats.applications_shortlisted} />
+              <StatCard label="Saved jobs" value={stats.saved_jobs_count} />
+            </>
+          )}
+          {isAdmin && "users_total" in stats && (
+            <>
+              <StatCard label="Users" value={stats.users_total} />
+              <StatCard label="Jobs" value={stats.jobs_total} />
+              <StatCard label="Companies" value={stats.companies_count} />
+              <StatCard label="Applications" value={stats.applications_total} />
+            </>
+          )}
+        </div>
+      )}
+
       <div className="mt-8 grid gap-4 sm:grid-cols-2">
-        {isRecruiter ? (
+        {isAdmin ? (
+          <DashboardCard
+            title="Admin panel"
+            description="Manage users, companies, jobs, and applications."
+            href="/admin"
+          />
+        ) : isRecruiter ? (
           <>
             <DashboardCard
               title="My job postings"
@@ -44,6 +104,11 @@ export default function DashboardPage() {
               title="Post a new job"
               description="Create a listing for one of your companies."
               href="/dashboard/jobs/new"
+            />
+            <DashboardCard
+              title="Manage companies"
+              description="Update company profiles and logos."
+              href="/dashboard/companies"
             />
           </>
         ) : (
@@ -58,6 +123,11 @@ export default function DashboardPage() {
               description="Jobs you've bookmarked for later."
               href="/dashboard/saved"
             />
+            <DashboardCard
+              title="My profile"
+              description="Update resume, skills, and contact info."
+              href="/dashboard/profile"
+            />
           </>
         )}
         <DashboardCard
@@ -66,6 +136,15 @@ export default function DashboardPage() {
           href="/jobs"
         />
       </div>
+    </div>
+  );
+}
+
+function StatCard({ label, value }: { label: string; value: number }) {
+  return (
+    <div className="card p-6">
+      <p className="text-sm text-slate-600 dark:text-slate-400">{label}</p>
+      <p className="mt-1 text-3xl font-bold text-brand-600 dark:text-brand-400">{value}</p>
     </div>
   );
 }
@@ -82,10 +161,10 @@ function DashboardCard({
   return (
     <Link
       href={href}
-      className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm transition hover:border-brand-500 hover:shadow-md"
+      className="card p-6 transition hover:border-brand-500 hover:shadow-md"
     >
-      <h2 className="text-lg font-semibold text-slate-900">{title}</h2>
-      <p className="mt-2 text-sm text-slate-600">{description}</p>
+      <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">{title}</h2>
+      <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">{description}</p>
     </Link>
   );
 }

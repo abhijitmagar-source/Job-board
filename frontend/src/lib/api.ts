@@ -1,3 +1,4 @@
+import axios, { type AxiosError, type AxiosRequestConfig } from "axios";
 import {
   clearTokens,
   getAccessToken,
@@ -5,12 +6,18 @@ import {
   setTokens,
 } from "./auth-storage";
 import type {
+  AdminDashboard,
   Application,
   AuthTokens,
+  CandidateDashboard,
+  CandidateProfile,
   Company,
   Job,
+  JobApplicant,
   JobFilters,
   PaginatedResponse,
+  RecruiterDashboard,
+  RecruiterProfile,
   SavedJob,
   User,
 } from "@/types";
@@ -29,88 +36,61 @@ export class ApiError extends Error {
   }
 }
 
-async function parseError(res: Response): Promise<ApiError> {
-  let details: Record<string, unknown> | undefined;
-  let message = `API error: ${res.status}`;
-  try {
-    const body = await res.json();
-    details = body;
-    if (typeof body.detail === "string") {
-      message = body.detail;
-    } else if (body.detail && Array.isArray(body.detail)) {
-      message = body.detail.map(String).join(", ");
-    } else {
-      const firstKey = Object.keys(body)[0];
-      if (firstKey && Array.isArray(body[firstKey])) {
-        message = `${firstKey}: ${body[firstKey].join(", ")}`;
+const client = axios.create({
+  baseURL: API_BASE,
+  headers: { "Content-Type": "application/json" },
+});
+
+client.interceptors.request.use((config) => {
+  const token = getAccessToken();
+  if (token && config.headers) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
+
+client.interceptors.response.use(
+  (res) => res,
+  async (error: AxiosError) => {
+    const original = error.config as AxiosRequestConfig & { _retry?: boolean };
+    if (error.response?.status === 401 && original && !original._retry) {
+      original._retry = true;
+      const refresh = getRefreshToken();
+      if (refresh) {
+        try {
+          const { data } = await axios.post(`${API_BASE}/auth/refresh/`, {
+            refresh,
+          });
+          setTokens(data.access, data.refresh ?? refresh);
+          if (original.headers) {
+            original.headers.Authorization = `Bearer ${data.access}`;
+          }
+          return client(original);
+        } catch {
+          clearTokens();
+        }
       }
     }
-  } catch {
-    // ignore JSON parse errors
-  }
-  return new ApiError(message, res.status, details);
-}
+    throw parseAxiosError(error);
+  },
+);
 
-async function refreshAccessToken(): Promise<string | null> {
-  const refresh = getRefreshToken();
-  if (!refresh) return null;
-
-  const res = await fetch(`${API_BASE}/auth/refresh/`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ refresh }),
-  });
-
-  if (!res.ok) {
-    clearTokens();
-    return null;
-  }
-
-  const data = (await res.json()) as { access: string; refresh?: string };
-  setTokens(data.access, data.refresh ?? refresh);
-  return data.access;
-}
-
-export async function apiFetch<T>(
-  path: string,
-  options: RequestInit & { auth?: boolean } = {},
-): Promise<T> {
-  const { auth = true, ...fetchOptions } = options;
-  const headers: Record<string, string> = {
-    "Content-Type": "application/json",
-    ...(fetchOptions.headers as Record<string, string>),
-  };
-
-  if (auth) {
-    const token = getAccessToken();
-    if (token) headers.Authorization = `Bearer ${token}`;
-  }
-
-  let res = await fetch(`${API_BASE}${path}`, {
-    ...fetchOptions,
-    headers,
-  });
-
-  if (res.status === 401 && auth && getRefreshToken()) {
-    const newToken = await refreshAccessToken();
-    if (newToken) {
-      headers.Authorization = `Bearer ${newToken}`;
-      res = await fetch(`${API_BASE}${path}`, {
-        ...fetchOptions,
-        headers,
-      });
+function parseAxiosError(error: AxiosError): ApiError {
+  const status = error.response?.status ?? 0;
+  const body = error.response?.data as Record<string, unknown> | undefined;
+  let message = error.message || `API error: ${status}`;
+  if (body) {
+    if (typeof body.detail === "string") {
+      message = body.detail;
+    } else {
+      const firstKey = Object.keys(body)[0];
+      const val = body[firstKey];
+      if (Array.isArray(val)) {
+        message = `${firstKey}: ${val.join(", ")}`;
+      }
     }
   }
-
-  if (!res.ok) {
-    throw await parseError(res);
-  }
-
-  if (res.status === 204) {
-    return undefined as T;
-  }
-
-  return res.json() as Promise<T>;
+  return new ApiError(message, status, body);
 }
 
 function buildQuery(params: Record<string, string | undefined>): string {
@@ -128,15 +108,7 @@ export async function login(
   email: string,
   password: string,
 ): Promise<{ user: User; tokens: AuthTokens }> {
-  const data = await apiFetch<{
-    access: string;
-    refresh: string;
-    user: User;
-  }>("/auth/login/", {
-    method: "POST",
-    auth: false,
-    body: JSON.stringify({ email, password }),
-  });
+  const { data } = await client.post("/auth/login/", { email, password });
   setTokens(data.access, data.refresh);
   return { user: data.user, tokens: { access: data.access, refresh: data.refresh } };
 }
@@ -148,14 +120,7 @@ export async function register(payload: {
   role: string;
   full_name: string;
 }): Promise<{ user: User; tokens: AuthTokens }> {
-  const data = await apiFetch<{
-    user: User;
-    tokens: AuthTokens;
-  }>("/auth/register/", {
-    method: "POST",
-    auth: false,
-    body: JSON.stringify(payload),
-  });
+  const { data } = await client.post("/auth/register/", payload);
   setTokens(data.tokens.access, data.tokens.refresh);
   return data;
 }
@@ -164,10 +129,7 @@ export async function logout(): Promise<void> {
   const refresh = getRefreshToken();
   if (refresh) {
     try {
-      await apiFetch("/auth/logout/", {
-        method: "POST",
-        body: JSON.stringify({ refresh }),
-      });
+      await client.post("/auth/logout/", { refresh });
     } catch {
       // still clear local tokens
     }
@@ -176,7 +138,73 @@ export async function logout(): Promise<void> {
 }
 
 export async function getCurrentUser(): Promise<User> {
-  return apiFetch<User>("/auth/me/");
+  const { data } = await client.get<User>("/auth/me/");
+  return data;
+}
+
+export async function requestPasswordReset(email: string): Promise<void> {
+  await client.post("/auth/password-reset/", {
+    email,
+    reset_url: typeof window !== "undefined" ? `${window.location.origin}/reset-password` : "",
+  });
+}
+
+export async function confirmPasswordReset(payload: {
+  uid: string;
+  token: string;
+  new_password: string;
+  new_password_confirm: string;
+}): Promise<void> {
+  await client.post("/auth/password-reset/confirm/", payload);
+}
+
+// --- Profile ---
+
+export async function getProfile(): Promise<CandidateProfile | RecruiterProfile> {
+  const { data } = await client.get("/auth/profile/me/");
+  return data;
+}
+
+export async function updateProfile(
+  payload: Partial<CandidateProfile & RecruiterProfile>,
+): Promise<CandidateProfile | RecruiterProfile> {
+  const { data } = await client.patch("/auth/profile/me/", payload);
+  return data;
+}
+
+export async function uploadResume(file: File): Promise<{ url: string }> {
+  const form = new FormData();
+  form.append("file", file);
+  const { data } = await client.post("/auth/upload/resume/", form, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
+  return data;
+}
+
+export async function uploadProfileImage(file: File): Promise<{ url: string }> {
+  const form = new FormData();
+  form.append("file", file);
+  const { data } = await client.post("/auth/upload/profile-image/", form, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
+  return data;
+}
+
+// --- Dashboard ---
+
+export async function getCandidateDashboard(): Promise<CandidateDashboard> {
+  const { data } = await client.get("/auth/dashboard/candidate/");
+  return data;
+}
+
+export async function getRecruiterDashboard(): Promise<RecruiterDashboard> {
+  const { data } = await client.get("/auth/dashboard/recruiter/");
+  return data;
+}
+
+export async function getAdminDashboard(): Promise<AdminDashboard> {
+  const { data } = await client.get("/auth/dashboard/admin/");
+  return data;
 }
 
 // --- Jobs ---
@@ -189,60 +217,114 @@ export async function getJobs(
     location: filters.location,
     job_type: filters.job_type || undefined,
     experience_level: filters.experience_level || undefined,
+    category: filters.category || undefined,
     company: filters.company,
+    skills: filters.skills,
     salary_min: filters.salary_min,
     salary_max: filters.salary_max,
+    is_featured: filters.is_featured,
     ordering: filters.ordering,
     page: filters.page,
+    page_size: filters.page_size,
   });
-  return apiFetch<PaginatedResponse<Job>>(`/jobs/${query}`);
+  const { data } = await client.get<PaginatedResponse<Job>>(`/jobs/${query}`);
+  return data;
 }
 
-export async function getMyJobs(
-  page?: string,
-): Promise<PaginatedResponse<Job>> {
+export async function getMyJobs(page?: string): Promise<PaginatedResponse<Job>> {
   const query = buildQuery({ mine: "1", page });
-  return apiFetch<PaginatedResponse<Job>>(`/jobs/${query}`);
+  const { data } = await client.get<PaginatedResponse<Job>>(`/jobs/${query}`);
+  return data;
 }
 
 export async function getJob(id: number): Promise<Job> {
-  return apiFetch<Job>(`/jobs/${id}/`, { auth: false });
+  const { data } = await client.get<Job>(`/jobs/${id}/`);
+  return data;
 }
 
 export async function createJob(payload: {
   title: string;
   description: string;
   salary?: string;
+  skills?: string;
   location: string;
+  category?: string;
   job_type: string;
   experience_level: string;
   company_id: number;
+  is_featured?: boolean;
 }): Promise<Job> {
-  return apiFetch<Job>("/jobs/", {
-    method: "POST",
-    body: JSON.stringify(payload),
-  });
+  const { data } = await client.post<Job>("/jobs/", payload);
+  return data;
+}
+
+export async function updateJob(
+  id: number,
+  payload: Partial<{
+    title: string;
+    description: string;
+    salary: string;
+    skills: string;
+    location: string;
+    category: string;
+    job_type: string;
+    experience_level: string;
+    is_featured: boolean;
+  }>,
+): Promise<Job> {
+  const { data } = await client.patch<Job>(`/jobs/${id}/`, payload);
+  return data;
 }
 
 export async function deleteJob(id: number): Promise<void> {
-  return apiFetch<void>(`/jobs/${id}/`, { method: "DELETE" });
+  await client.delete(`/jobs/${id}/`);
 }
 
 // --- Companies ---
 
+export async function getCompanies(
+  page?: string,
+): Promise<PaginatedResponse<Company>> {
+  const query = buildQuery({ page });
+  const { data } = await client.get<PaginatedResponse<Company>>(`/companies/${query}`);
+  return data;
+}
+
+export async function getCompany(id: number): Promise<Company> {
+  const { data } = await client.get<Company>(`/companies/${id}/`);
+  return data;
+}
+
 export async function getMyCompanies(): Promise<PaginatedResponse<Company>> {
-  return apiFetch<PaginatedResponse<Company>>("/companies/?mine=1");
+  const { data } = await client.get<PaginatedResponse<Company>>("/companies/?mine=1");
+  return data;
 }
 
 export async function createCompany(payload: {
   name: string;
   website?: string;
   description?: string;
+  location?: string;
 }): Promise<Company> {
-  return apiFetch<Company>("/companies/", {
-    method: "POST",
-    body: JSON.stringify(payload),
+  const { data } = await client.post<Company>("/companies/", payload);
+  return data;
+}
+
+export async function updateCompany(
+  id: number,
+  payload: Partial<Company>,
+): Promise<Company> {
+  const { data } = await client.patch<Company>(`/companies/${id}/`, payload);
+  return data;
+}
+
+export async function uploadCompanyLogo(id: number, file: File): Promise<Company> {
+  const form = new FormData();
+  form.append("file", file);
+  const { data } = await client.post<Company>(`/companies/${id}/upload-logo/`, form, {
+    headers: { "Content-Type": "multipart/form-data" },
   });
+  return data;
 }
 
 // --- Applications ---
@@ -250,32 +332,81 @@ export async function createCompany(payload: {
 export async function applyForJob(
   jobId: number,
   coverLetter: string,
+  resumeUrl?: string,
 ): Promise<Application> {
-  return apiFetch<Application>("/applications/", {
-    method: "POST",
-    body: JSON.stringify({ job_id: jobId, cover_letter: coverLetter }),
+  const { data } = await client.post<Application>("/applications/", {
+    job_id: jobId,
+    cover_letter: coverLetter,
+    resume_url: resumeUrl,
   });
+  return data;
 }
 
-export async function getMyApplications(): Promise<
-  PaginatedResponse<Application>
-> {
-  return apiFetch<PaginatedResponse<Application>>("/applications/me/");
+export async function getMyApplications(
+  status?: string,
+): Promise<PaginatedResponse<Application>> {
+  const query = buildQuery({ status });
+  const { data } = await client.get<PaginatedResponse<Application>>(
+    `/applications/me${query}`,
+  );
+  return data;
+}
+
+export async function getJobApplicants(
+  jobId: number,
+  status?: string,
+): Promise<PaginatedResponse<JobApplicant>> {
+  const query = buildQuery({ status });
+  const { data } = await client.get<PaginatedResponse<JobApplicant>>(
+    `/jobs/${jobId}/applicants${query}`,
+  );
+  return data;
+}
+
+export async function updateApplicationStatus(
+  id: number,
+  status: string,
+): Promise<JobApplicant> {
+  const { data } = await client.patch<JobApplicant>(`/applications/${id}/status/`, {
+    status,
+  });
+  return data;
 }
 
 // --- Saved jobs ---
 
 export async function getSavedJobs(): Promise<PaginatedResponse<SavedJob>> {
-  return apiFetch<PaginatedResponse<SavedJob>>("/saved-jobs/");
+  const { data } = await client.get<PaginatedResponse<SavedJob>>("/saved-jobs/");
+  return data;
 }
 
 export async function saveJob(jobId: number): Promise<SavedJob> {
-  return apiFetch<SavedJob>("/saved-jobs/", {
-    method: "POST",
-    body: JSON.stringify({ job_id: jobId }),
-  });
+  const { data } = await client.post<SavedJob>("/saved-jobs/", { job_id: jobId });
+  return data;
 }
 
 export async function unsaveJob(savedJobId: number): Promise<void> {
-  return apiFetch<void>(`/saved-jobs/${savedJobId}/`, { method: "DELETE" });
+  await client.delete(`/saved-jobs/${savedJobId}/`);
+}
+
+// --- Admin ---
+
+export async function getAdminUsers(): Promise<PaginatedResponse<User>> {
+  const { data } = await client.get("/auth/admin/users/");
+  return data;
+}
+
+export async function getAdminCompanies(): Promise<PaginatedResponse<Company>> {
+  const { data } = await client.get("/auth/admin/companies/");
+  return data;
+}
+
+export async function getAdminJobs(): Promise<PaginatedResponse<Job>> {
+  const { data } = await client.get("/auth/admin/jobs/");
+  return data;
+}
+
+export async function getAdminApplications(): Promise<PaginatedResponse<Application>> {
+  const { data } = await client.get("/auth/admin/applications/");
+  return data;
 }

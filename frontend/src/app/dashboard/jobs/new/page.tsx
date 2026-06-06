@@ -11,10 +11,12 @@ import {
 } from "@/lib/api";
 import { ApiError } from "@/lib/api";
 import {
+  CATEGORY_OPTIONS,
   EXPERIENCE_OPTIONS,
   JOB_TYPE_OPTIONS,
   type Company,
   type ExperienceLevel,
+  type JobCategory,
   type JobType,
 } from "@/types";
 
@@ -29,6 +31,8 @@ export default function NewJobPage() {
     description: "",
     salary: "",
     location: "",
+    skills: "",
+    category: "engineering" as JobCategory,
     job_type: "full_time" as JobType,
     experience_level: "mid" as ExperienceLevel,
     company_id: "",
@@ -78,7 +82,9 @@ export default function NewJobPage() {
         title: form.title,
         description: form.description,
         salary: form.salary || undefined,
+        skills: form.skills || undefined,
         location: form.location,
+        category: form.category,
         job_type: form.job_type,
         experience_level: form.experience_level,
         company_id: Number(form.company_id),
@@ -242,6 +248,39 @@ export default function NewJobPage() {
               ))}
             </select>
           </div>
+        </div>
+
+        <div>
+          <label htmlFor="category" className="mb-1 block text-sm text-slate-600">
+            Category
+          </label>
+          <select
+            id="category"
+            value={form.category}
+            onChange={(e) =>
+              setForm({ ...form, category: e.target.value as JobCategory })
+            }
+            className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+          >
+            {CATEGORY_OPTIONS.map((opt) => (
+              <option key={opt.value} value={opt.value}>
+                {opt.label}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div>
+          <label htmlFor="skills" className="mb-1 block text-sm text-slate-600">
+            Required skills (comma-separated)
+          </label>
+          <input
+            id="skills"
+            value={form.skills}
+            onChange={(e) => setForm({ ...form, skills: e.target.value })}
+            placeholder="Python, Django, React"
+            className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+          />
         </div>
 
         <div>

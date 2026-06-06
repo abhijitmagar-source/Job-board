@@ -30,6 +30,7 @@ class Application(models.Model):
         db_index=True,
     )
     cover_letter = models.TextField(blank=True)
+    resume_url = models.URLField(max_length=500, blank=True)
     applied_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

@@ -22,9 +22,12 @@ class JobSerializer(serializers.ModelSerializer):
             "title",
             "description",
             "salary",
+            "skills",
             "location",
+            "category",
             "job_type",
             "experience_level",
+            "is_featured",
             "is_active",
             "company",
             "company_id",
@@ -39,7 +42,7 @@ class JobSerializer(serializers.ModelSerializer):
         if hasattr(obj, "_is_saved"):
             return bool(obj._is_saved)
         request = self.context.get("request")
-        if not request or not request.user.is_authenticated or not request.user.is_job_seeker:
+        if not request or not request.user.is_authenticated or not request.user.is_candidate:
             return False
         return SavedJob.objects.filter(user=request.user, job=obj).exists()
 

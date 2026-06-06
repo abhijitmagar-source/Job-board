@@ -1,104 +1,236 @@
-# Job Board — Full-Stack Portfolio Project
+# JobBoard — Full-Stack Job Board Platform
 
-A production-style job board showcasing **Django**, **Django REST Framework**, **MySQL**, **Redis**, **JWT**, **RBAC**, **Next.js**, **Docker**, **GitHub Actions**, and **AWS EC2** deployment.
+A production-ready job board SaaS built for software engineering assessments. Candidates browse and apply to jobs; recruiters post listings and manage applicants; admins oversee the platform.
+
+## Live Demo
+
+| Service | URL |
+|---------|-----|
+| Frontend (Vercel) | Deploy with Root Directory = `frontend` |
+| Backend (Render) | Deploy via `render.yaml` blueprint |
+| API Docs | `https://your-api.onrender.com/api/docs/` |
 
 ## Tech Stack
 
 | Layer | Technology |
 |-------|------------|
-| Frontend | Next.js 14, TypeScript, Tailwind CSS |
+| Frontend | Next.js 14, TypeScript, Tailwind CSS, Axios |
 | Backend | Django 5, Django REST Framework |
-| Database | MySQL 8 |
-| Cache | Redis 7 |
-| Auth | JWT (Simple JWT) |
-| API Docs | drf-spectacular (OpenAPI / Swagger) |
-| DevOps | Docker, Docker Compose, Nginx, GitHub Actions |
+| Auth | JWT (SimpleJWT) with refresh rotation + blacklist |
+| Database | SQLite (dev) · PostgreSQL (production) |
+| Storage | Cloudinary (logos, resumes, profile images) |
+| CI/CD | GitHub Actions |
+| Deployment | Vercel (frontend) · Render (backend) |
 
-## Repository Structure
+## Features
+
+### Candidate
+- Hero search, featured jobs, latest openings
+- Advanced filters (category, salary, experience, location, skills)
+- Job details with apply + save
+- Profile management with resume & image upload
+- Application tracking dashboard
+- Saved jobs
+- Dark mode
+
+### Recruiter
+- Post, update, and deactivate jobs
+- Company management with logo upload
+- **Applicant tracking** — view name, email, resume, date, status
+- Download resumes
+- Update application status (pending → hired)
+- Dashboard analytics
+
+### Admin
+- Platform overview stats
+- Manage users, companies, jobs, applications
+
+### Security & Performance
+- Role-based access control (candidate, recruiter, admin)
+- JWT authentication + password reset
+- Pagination with configurable `page_size`
+- Query optimization (`select_related`, filters)
+- Rate limiting on auth endpoints
+
+## Screenshots
+
+> Add screenshots after deployment:
+> - Home page hero
+> - Job listing with filters
+> - Recruiter applicant view
+> - Candidate dashboard
+
+## Architecture
+
+```
+┌─────────────┐     HTTPS/JWT      ┌──────────────────┐
+│  Next.js    │ ◄───────────────► │  Django REST API │
+│  (Vercel)   │                   │  (Render)        │
+└─────────────┘                   └────────┬─────────┘
+                                           │
+                              ┌────────────┼────────────┐
+                              ▼            ▼            ▼
+                        PostgreSQL   Cloudinary    Redis (opt)
+```
+
+## Database Design
+
+| Model | Key Fields |
+|-------|------------|
+| User | email, role (candidate/recruiter/admin) |
+| CandidateProfile | full_name, skills, experience, education, resume_url, profile_image_url |
+| RecruiterProfile | name, company, position |
+| Company | name, logo_url, website, location, description |
+| Job | title, skills, category, salary, location, job_type, experience_level, is_featured |
+| Application | candidate, job, resume_url, cover_letter, status |
+| SavedJob | candidate, job |
+
+See [docs/DATABASE_SCHEMA.md](docs/DATABASE_SCHEMA.md) for full schema.
+
+## Quick Start (Local)
+
+```bash
+# Backend
+cp backend/.env.example backend/.env
+cd backend
+pip install -r requirements/dev.txt
+python manage.py migrate
+python manage.py runserver
+
+# Frontend (new terminal)
+cp frontend/.env.example frontend/.env.local
+cd frontend
+npm install
+npm run dev
+```
+
+- Frontend: http://localhost:3000
+- API: http://localhost:8000/api/v1/
+- Swagger: http://localhost:8000/api/docs/
+
+### Create admin user
+
+```bash
+cd backend
+python manage.py createsuperuser
+# Then update role in Django admin or:
+python manage.py shell -c "from apps.accounts.models import User, UserRole; u=User.objects.get(email='admin@example.com'); u.role=UserRole.ADMIN; u.save()"
+```
+
+## API Documentation
+
+Full API reference: [docs/API.md](docs/API.md)  
+Interactive docs: `/api/docs/` (Swagger) · `/api/redoc/` (ReDoc)
+
+### Key Endpoints
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/auth/register/` | Register candidate or recruiter |
+| POST | `/auth/login/` | JWT login |
+| POST | `/auth/password-reset/` | Request password reset |
+| GET | `/jobs/` | List/search/filter jobs |
+| POST | `/applications/` | Apply for job |
+| GET | `/jobs/{id}/applicants/` | Recruiter: view applicants |
+| PATCH | `/applications/{id}/status/` | Update applicant status |
+| POST | `/companies/{id}/upload-logo/` | Upload company logo |
+| POST | `/auth/upload/resume/` | Upload candidate resume |
+| GET | `/auth/dashboard/candidate/` | Candidate dashboard stats |
+| GET | `/auth/dashboard/recruiter/` | Recruiter dashboard stats |
+
+## Deployment
+
+### Frontend → Vercel
+
+1. Import repo in Vercel
+2. Set **Root Directory** = `frontend`
+3. Environment variable: `NEXT_PUBLIC_API_URL=https://your-api.onrender.com/api/v1`
+4. Deploy
+
+### Backend → Render
+
+1. Connect GitHub repo
+2. Use `render.yaml` blueprint (auto-creates PostgreSQL + web service)
+3. Set environment variables:
+
+| Variable | Description |
+|----------|-------------|
+| `DJANGO_SECRET_KEY` | Auto-generated by Render |
+| `DATABASE_URL` | Auto-linked from PostgreSQL |
+| `ALLOWED_HOSTS` | `your-api.onrender.com` |
+| `CORS_ALLOWED_ORIGINS` | `https://your-app.vercel.app` |
+| `CLOUDINARY_CLOUD_NAME` | Cloudinary cloud name |
+| `CLOUDINARY_API_KEY` | Cloudinary API key |
+| `CLOUDINARY_API_SECRET` | Cloudinary API secret |
+
+4. Add Vercel URL to `CORS_ALLOWED_ORIGINS` on backend
+
+See [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) for detailed guide.
+
+## CI/CD
+
+| Workflow | Trigger | Purpose |
+|----------|---------|---------|
+| `ci.yml` | Push/PR | Lint, test, build backend + frontend + Docker |
+| `deploy.yml` | Push to `main` | Verify build readiness for Vercel + Render |
+
+## Environment Variables
+
+### Backend (`backend/.env`)
+
+```
+DJANGO_SECRET_KEY=
+DEBUG=True
+DATABASE_URL=          # optional in dev (SQLite default)
+CORS_ALLOWED_ORIGINS=http://localhost:3000
+CLOUDINARY_CLOUD_NAME=
+CLOUDINARY_API_KEY=
+CLOUDINARY_API_SECRET=
+```
+
+### Frontend (`frontend/.env.local`)
+
+```
+NEXT_PUBLIC_API_URL=http://localhost:8000/api/v1
+```
+
+## Folder Structure
 
 ```
 job-board/
-├── backend/                 # Django API
-│   ├── config/              # Project settings & URLs
-│   ├── apps/                # Domain apps
-│   │   ├── accounts/        # User, Profile, JWT auth
-│   │   ├── companies/       # Company model
-│   │   ├── jobs/            # Job listings, saved jobs
-│   │   └── applications/    # Job applications
-│   └── requirements/        # Split dependency files
-├── frontend/                # Next.js UI
-├── docker/                  # Dockerfiles & compose
-├── nginx/                   # Reverse proxy config
-├── docs/                    # Architecture & guides
-├── scripts/                 # Helper scripts
-└── .github/workflows/       # CI/CD
+├── backend/
+│   ├── apps/
+│   │   ├── accounts/      # Auth, profiles, dashboard, admin APIs
+│   │   ├── companies/     # Company CRUD + logo upload
+│   │   ├── jobs/          # Jobs, saved jobs, filters
+│   │   └── applications/  # Apply, applicant tracking
+│   ├── config/            # Settings, URLs, pagination
+│   └── requirements/
+├── frontend/
+│   └── src/
+│       ├── app/           # Next.js pages
+│       ├── components/    # UI components
+│       ├── context/       # Auth + theme providers
+│       ├── lib/           # Axios API client
+│       └── types/         # TypeScript types
+├── .github/workflows/     # CI/CD
+├── render.yaml            # Render blueprint
+└── docs/                  # Architecture, API, deployment guides
 ```
 
-## Roles
+## Assessment Submission Checklist
 
-1. **Recruiter** — CRUD jobs, view applicants, update application status
-2. **Job Seeker** — Browse/search/filter jobs, apply, save jobs, view applications
-
-## Quick Start (Docker — recommended)
-
-```bash
-cd docker
-cp .env.example .env          # set DJANGO_SECRET_KEY
-docker compose up --build
-
-# API:        http://localhost:8000/api/v1/
-# Swagger UI: http://localhost:8000/api/docs/
-# Frontend:   http://localhost:3000
-```
-
-Browse jobs at http://localhost:3000/jobs — search, filter, apply, and manage listings from the UI.
-
-## Deploy frontend to Vercel
-
-1. Import the repo in Vercel with **Root Directory** = `frontend`
-2. Set `NEXT_PUBLIC_API_URL` to your production API
-3. Add the Vercel URL to backend `CORS_ALLOWED_ORIGINS`
-
-See [Deployment Guide](docs/DEPLOYMENT.md) for full details.
-
-With Nginx on port 80:
-
-```bash
-docker compose -f docker-compose.yml -f docker-compose.prod.yml up --build
-```
-
-## Local development (without Docker)
-
-```bash
-cp backend/.env.example backend/.env
-cp frontend/.env.example frontend/.env.local
-./scripts/setup-dev.sh
-```
-
-## Documentation
-
-- [Architecture](docs/ARCHITECTURE.md)
-- [Database Schema](docs/DATABASE_SCHEMA.md)
-- [API Overview](docs/API.md)
-- [Deployment Guide](docs/DEPLOYMENT.md)
-- [Phase 9: CI/CD](docs/phases/PHASE_9.md)
-
-## Development Phases
-
-| Phase | Topic |
-|-------|--------|
-| 1 | System design & folder structure |
-| 2 | Database models |
-| 3 | JWT authentication |
-| 4 | Job management APIs |
-| 5 | Application management APIs |
-| 6 | Redis caching |
-| 7 | Swagger documentation |
-| 8 | Dockerization |
-| 9 | GitHub Actions CI/CD |
-| 10 | Deployment (Vercel + EC2) |
+- [x] Job board with candidate, recruiter, admin roles
+- [x] JWT auth with refresh, logout, password reset
+- [x] Search & filters (title, skills, company, location, category, salary)
+- [x] Recruiter applicant tracking with resume download
+- [x] Cloudinary uploads (logo, resume, profile image)
+- [x] Premium responsive UI with dark mode
+- [x] GitHub Actions CI/CD
+- [x] Vercel + Render deployment configs
+- [x] PostgreSQL production database
+- [x] Professional documentation
 
 ## License
 
-MIT — portfolio / learning use.
-# Job-boardtets
+MIT — portfolio / assessment use.

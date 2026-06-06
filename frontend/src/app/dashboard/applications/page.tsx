@@ -17,13 +17,13 @@ export default function ApplicationsPage() {
 
   useEffect(() => {
     if (!authLoading && !user) router.replace("/login");
-    if (!authLoading && user && user.role !== "job_seeker") {
+    if (!authLoading && user && user.role !== "candidate") {
       router.replace("/dashboard");
     }
   }, [user, authLoading, router]);
 
   useEffect(() => {
-    if (!user || user.role !== "job_seeker") return;
+    if (!user || user.role !== "candidate") return;
     getMyApplications()
       .then((data) => setApplications(data.results))
       .catch((err: Error) => setError(err.message))

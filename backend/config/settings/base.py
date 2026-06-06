@@ -82,11 +82,11 @@ TEMPLATES = [
 # Custom user (implemented in Phase 2)
 AUTH_USER_MODEL = "accounts.User"
 
-# Database — MySQL (override via .env)
+# Database — PostgreSQL in production, SQLite/MySQL via .env override
 DATABASES = {
     "default": env.db(
         "DATABASE_URL",
-        default="mysql://jobboard:jobboard@127.0.0.1:3306/jobboard",
+        default="sqlite:///" + str(BASE_DIR / "db.sqlite3"),
     )
 }
 
@@ -124,8 +124,7 @@ REST_FRAMEWORK = {
     "DEFAULT_PERMISSION_CLASSES": (
         "rest_framework.permissions.IsAuthenticated",
     ),
-    "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
-    "PAGE_SIZE": 20,
+    "DEFAULT_PAGINATION_CLASS": "config.pagination.StandardPagination",
     "DEFAULT_FILTER_BACKENDS": (
         "django_filters.rest_framework.DjangoFilterBackend",
         "rest_framework.filters.SearchFilter",
@@ -173,7 +172,7 @@ SPECTACULAR_SETTINGS = {
     "DESCRIPTION": (
         "Production-style job board REST API.\n\n"
         "**Roles:** `recruiter` (post jobs, review applicants) · "
-        "`job_seeker` (browse, apply, save jobs)\n\n"
+        "`candidate` (browse, apply, save jobs) · `admin` (platform management)\n\n"
         "**Auth:** Register or login to obtain JWT tokens. "
         "Click **Authorize** and enter `Bearer <access_token>`."
     ),
@@ -221,3 +220,30 @@ SPECTACULAR_SETTINGS = {
 
 # Job list cache TTL (seconds)
 JOBS_LIST_CACHE_TTL = env.int("JOBS_LIST_CACHE_TTL", default=300)
+
+# Cloudinary (optional — local media fallback when unset)
+CLOUDINARY_CLOUD_NAME = env("CLOUDINARY_CLOUD_NAME", default="")
+CLOUDINARY_API_KEY = env("CLOUDINARY_API_KEY", default="")
+CLOUDINARY_API_SECRET = env("CLOUDINARY_API_SECRET", default="")
+
+if CLOUDINARY_CLOUD_NAME:
+    import cloudinary
+
+    cloudinary.config(
+        cloud_name=CLOUDINARY_CLOUD_NAME,
+        api_key=CLOUDINARY_API_KEY,
+        api_secret=CLOUDINARY_API_SECRET,
+        secure=True,
+    )
+
+# Email
+EMAIL_BACKEND = env(
+    "EMAIL_BACKEND",
+    default="django.core.mail.backends.console.EmailBackend",
+)
+EMAIL_HOST = env("EMAIL_HOST", default="")
+EMAIL_PORT = env.int("EMAIL_PORT", default=587)
+EMAIL_USE_TLS = env.bool("EMAIL_USE_TLS", default=True)
+EMAIL_HOST_USER = env("EMAIL_HOST_USER", default="")
+EMAIL_HOST_PASSWORD = env("EMAIL_HOST_PASSWORD", default="")
+DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL", default="noreply@jobboard.app")

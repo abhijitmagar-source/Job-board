@@ -1,7 +1,7 @@
 from django.contrib.auth import get_user_model
 from rest_framework import serializers
 
-from apps.accounts.serializers import ProfileSerializer
+from apps.accounts.serializers import CandidateProfileSerializer
 from apps.applications.models import Application, ApplicationStatus
 from apps.jobs.models import Job
 from apps.jobs.serializers import JobSerializer
@@ -18,7 +18,7 @@ class ApplicationCreateSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Application
-        fields = ("job_id", "cover_letter")
+        fields = ("job_id", "cover_letter", "resume_url")
 
     def validate_job_id(self, job: Job) -> Job:
         user = self.context["request"].user
@@ -27,10 +27,10 @@ class ApplicationCreateSerializer(serializers.ModelSerializer):
         return job
 
     def create(self, validated_data):
-        return Application.objects.create(
-            applicant=self.context["request"].user,
-            **validated_data,
-        )
+        user = self.context["request"].user
+        if not validated_data.get("resume_url") and hasattr(user, "candidate_profile"):
+            validated_data["resume_url"] = user.candidate_profile.resume_url or ""
+        return Application.objects.create(applicant=user, **validated_data)
 
 
 class ApplicationSerializer(serializers.ModelSerializer):
@@ -45,6 +45,7 @@ class ApplicationSerializer(serializers.ModelSerializer):
             "status",
             "status_display",
             "cover_letter",
+            "resume_url",
             "applied_at",
             "updated_at",
         )
@@ -52,11 +53,11 @@ class ApplicationSerializer(serializers.ModelSerializer):
 
 
 class ApplicantSerializer(serializers.ModelSerializer):
-    profile = ProfileSerializer(read_only=True)
+    candidate_profile = CandidateProfileSerializer(read_only=True)
 
     class Meta:
         model = User
-        fields = ("id", "email", "profile")
+        fields = ("id", "email", "candidate_profile")
         read_only_fields = fields
 
 
@@ -72,6 +73,7 @@ class JobApplicantSerializer(serializers.ModelSerializer):
             "status",
             "status_display",
             "cover_letter",
+            "resume_url",
             "applied_at",
             "updated_at",
         )

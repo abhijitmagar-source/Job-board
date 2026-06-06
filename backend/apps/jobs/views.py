@@ -49,7 +49,7 @@ class JobViewSet(viewsets.ModelViewSet):
     queryset = Job.objects.none()
     filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
     filterset_class = JobFilter
-    search_fields = ["title", "description", "company__name", "location"]
+    search_fields = ["title", "description", "company__name", "location", "skills"]
     ordering_fields = ["created_at", "salary", "title"]
     ordering = ["-created_at"]
 

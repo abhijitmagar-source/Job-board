@@ -3,24 +3,48 @@ from django.contrib.auth.password_validation import validate_password
 from rest_framework import serializers
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
-from apps.accounts.models import Profile, UserRole
+from apps.accounts.models import CandidateProfile, RecruiterProfile, UserRole
 
 User = get_user_model()
 
 
-class ProfileSerializer(serializers.ModelSerializer):
+class CandidateProfileSerializer(serializers.ModelSerializer):
     class Meta:
-        model = Profile
-        fields = ("full_name", "phone", "resume_url", "bio", "updated_at")
+        model = CandidateProfile
+        fields = (
+            "full_name",
+            "phone",
+            "skills",
+            "experience",
+            "education",
+            "resume_url",
+            "profile_image_url",
+            "updated_at",
+        )
+        read_only_fields = ("updated_at",)
+
+
+class RecruiterProfileSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = RecruiterProfile
+        fields = ("name", "company", "position", "phone", "updated_at")
         read_only_fields = ("updated_at",)
 
 
 class UserSerializer(serializers.ModelSerializer):
-    profile = ProfileSerializer(read_only=True)
+    candidate_profile = CandidateProfileSerializer(read_only=True)
+    recruiter_profile = RecruiterProfileSerializer(read_only=True)
 
     class Meta:
         model = User
-        fields = ("id", "email", "role", "date_joined", "profile")
+        fields = (
+            "id",
+            "email",
+            "role",
+            "date_joined",
+            "candidate_profile",
+            "recruiter_profile",
+        )
         read_only_fields = fields
 
 
@@ -39,8 +63,11 @@ class RegisterSerializer(serializers.ModelSerializer):
         return value.lower()
 
     def validate_role(self, value: str) -> str:
-        if value not in UserRole.values:
-            raise serializers.ValidationError("Role must be recruiter or job_seeker.")
+        allowed = {UserRole.CANDIDATE, UserRole.RECRUITER}
+        if value not in allowed:
+            raise serializers.ValidationError(
+                "Role must be candidate or recruiter."
+            )
         return value
 
     def validate(self, attrs: dict) -> dict:
@@ -55,14 +82,16 @@ class RegisterSerializer(serializers.ModelSerializer):
         full_name = validated_data.pop("full_name")
         validated_data.pop("password_confirm")
         password = validated_data.pop("password")
+        role = validated_data.get("role", UserRole.CANDIDATE)
         user = User.objects.create_user(password=password, **validated_data)
-        Profile.objects.create(user=user, full_name=full_name)
+        if role == UserRole.RECRUITER:
+            RecruiterProfile.objects.create(user=user, name=full_name)
+        else:
+            CandidateProfile.objects.create(user=user, full_name=full_name)
         return user
 
 
 class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
-    """Login response includes user payload alongside JWT tokens."""
-
     @classmethod
     def get_token(cls, user):
         token = super().get_token(user)
@@ -80,9 +109,28 @@ class LogoutSerializer(serializers.Serializer):
     refresh = serializers.CharField(help_text="Refresh token to blacklist on logout.")
 
 
+class PasswordResetRequestSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+
+
+class PasswordResetConfirmSerializer(serializers.Serializer):
+    uid = serializers.CharField()
+    token = serializers.CharField()
+    new_password = serializers.CharField(min_length=8, write_only=True)
+    new_password_confirm = serializers.CharField(min_length=8, write_only=True)
+
+    def validate(self, attrs: dict) -> dict:
+        if attrs["new_password"] != attrs["new_password_confirm"]:
+            raise serializers.ValidationError(
+                {"new_password_confirm": "Passwords do not match."}
+            )
+        validate_password(attrs["new_password"])
+        return attrs
+
+
 class TokenPairSerializer(serializers.Serializer):
-    access = serializers.CharField(help_text="JWT access token (short-lived).")
-    refresh = serializers.CharField(help_text="JWT refresh token (long-lived).")
+    access = serializers.CharField()
+    refresh = serializers.CharField()
 
 
 class RegisterResponseSerializer(serializers.Serializer):

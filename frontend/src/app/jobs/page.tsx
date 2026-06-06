@@ -2,9 +2,11 @@
 
 import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
+import { EmptyState } from "@/components/EmptyState";
 import { JobCard } from "@/components/JobCard";
 import { JobFiltersPanel } from "@/components/JobFilters";
 import { Pagination } from "@/components/Pagination";
+import { JobCardSkeleton } from "@/components/Skeleton";
 import { getJobs } from "@/lib/api";
 import type { Job, JobFilters } from "@/types";
 
@@ -23,8 +25,10 @@ function JobsContent() {
     job_type: (searchParams.get("job_type") ?? undefined) as JobFilters["job_type"],
     experience_level: (searchParams.get("experience_level") ??
       undefined) as JobFilters["experience_level"],
+    category: (searchParams.get("category") ?? undefined) as JobFilters["category"],
     salary_min: searchParams.get("salary_min") ?? undefined,
     salary_max: searchParams.get("salary_max") ?? undefined,
+    is_featured: searchParams.get("is_featured") ?? undefined,
     ordering: searchParams.get("ordering") ?? undefined,
     page: searchParams.get("page") ?? undefined,
   };
@@ -51,7 +55,7 @@ function JobsContent() {
     return () => {
       cancelled = true;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- refetch when URL query changes
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [queryKey]);
 
   return (
@@ -62,30 +66,34 @@ function JobsContent() {
 
       <div className="space-y-4">
         {loading && (
-          <p className="text-center text-slate-500 py-12">Loading jobs…</p>
+          <div className="space-y-3">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <JobCardSkeleton key={i} />
+            ))}
+          </div>
         )}
 
         {error && (
-          <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-800 dark:bg-red-900/20 dark:text-red-400">
             {error}
           </div>
         )}
 
         {!loading && !error && jobs.length === 0 && (
-          <div className="rounded-xl border border-slate-200 bg-white px-6 py-12 text-center">
-            <p className="text-lg font-medium text-slate-900">No jobs found</p>
-            <p className="mt-2 text-sm text-slate-600">
-              Try adjusting your search or filters.
-            </p>
-          </div>
+          <EmptyState
+            title="No jobs found"
+            description="Try adjusting your search or filters to find more opportunities."
+          />
         )}
 
         {!loading && jobs.length > 0 && (
           <>
-            <p className="text-sm text-slate-600">{count} jobs found</p>
+            <p className="text-sm text-slate-600 dark:text-slate-400">
+              {count} jobs found
+            </p>
             <div className="space-y-3">
               {jobs.map((job) => (
-                <JobCard key={job.id} job={job} />
+                <JobCard key={job.id} job={job} showApply />
               ))}
             </div>
             <Pagination count={count} />
@@ -100,13 +108,23 @@ export default function JobsPage() {
   return (
     <div className="mx-auto max-w-6xl px-4 py-8">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-slate-900">Browse Jobs</h1>
-        <p className="mt-2 text-slate-600">
+        <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-100">
+          Browse Jobs
+        </h1>
+        <p className="mt-2 text-slate-600 dark:text-slate-400">
           Search and filter open roles across companies.
         </p>
       </div>
 
-      <Suspense fallback={<p className="text-slate-500">Loading filters…</p>}>
+      <Suspense
+        fallback={
+          <div className="space-y-3">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <JobCardSkeleton key={i} />
+            ))}
+          </div>
+        }
+      >
         <JobsContent />
       </Suspense>
     </div>

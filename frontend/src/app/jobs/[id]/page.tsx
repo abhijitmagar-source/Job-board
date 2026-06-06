@@ -3,16 +3,18 @@
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { FormEvent, useEffect, useState } from "react";
+import { toast } from "sonner";
+import { JobCardSkeleton } from "@/components/Skeleton";
 import { useAuth } from "@/context/AuthContext";
 import {
+  ApiError,
   applyForJob,
   getJob,
   getSavedJobs,
   saveJob,
   unsaveJob,
 } from "@/lib/api";
-import { ApiError } from "@/lib/api";
-import { formatLabel, formatSalary } from "@/types";
+import { formatDate, formatLabel, formatSalary } from "@/types";
 import type { Job } from "@/types";
 
 export default function JobDetailPage() {
@@ -26,7 +28,6 @@ export default function JobDetailPage() {
   const [applying, setApplying] = useState(false);
   const [applied, setApplied] = useState(false);
   const [savedJobId, setSavedJobId] = useState<number | null>(null);
-  const [actionMessage, setActionMessage] = useState("");
 
   useEffect(() => {
     getJob(Number(id))
@@ -36,7 +37,7 @@ export default function JobDetailPage() {
   }, [id]);
 
   useEffect(() => {
-    if (!user?.role || user.role !== "job_seeker") return;
+    if (!user || user.role !== "candidate") return;
     getSavedJobs()
       .then((data) => {
         const match = data.results.find((s) => s.job.id === Number(id));
@@ -52,15 +53,13 @@ export default function JobDetailPage() {
       return;
     }
     setApplying(true);
-    setActionMessage("");
     try {
-      await applyForJob(Number(id), coverLetter);
+      const resumeUrl = user.candidate_profile?.resume_url;
+      await applyForJob(Number(id), coverLetter, resumeUrl);
       setApplied(true);
-      setActionMessage("Application submitted successfully.");
+      toast.success("Application submitted successfully!");
     } catch (err) {
-      setActionMessage(
-        err instanceof ApiError ? err.message : "Failed to apply.",
-      );
+      toast.error(err instanceof ApiError ? err.message : "Failed to apply.");
     } finally {
       setApplying(false);
     }
@@ -71,28 +70,25 @@ export default function JobDetailPage() {
       router.push("/login");
       return;
     }
-    setActionMessage("");
     try {
       if (savedJobId) {
         await unsaveJob(savedJobId);
         setSavedJobId(null);
-        setActionMessage("Job removed from saved list.");
+        toast.success("Job removed from saved list.");
       } else {
         const saved = await saveJob(Number(id));
         setSavedJobId(saved.id);
-        setActionMessage("Job saved.");
+        toast.success("Job saved!");
       }
     } catch (err) {
-      setActionMessage(
-        err instanceof ApiError ? err.message : "Could not update saved job.",
-      );
+      toast.error(err instanceof ApiError ? err.message : "Could not update saved job.");
     }
   };
 
   if (loading) {
     return (
-      <div className="mx-auto max-w-3xl px-4 py-12 text-center text-slate-500">
-        Loading job…
+      <div className="mx-auto max-w-3xl px-4 py-8">
+        <JobCardSkeleton />
       </div>
     );
   }
@@ -114,45 +110,78 @@ export default function JobDetailPage() {
         ← Back to jobs
       </Link>
 
-      <article className="mt-6 rounded-xl border border-slate-200 bg-white p-8 shadow-sm">
-        <header>
-          <h1 className="text-3xl font-bold text-slate-900">{job.title}</h1>
-          <p className="mt-2 text-lg text-slate-600">{job.company.name}</p>
-          <div className="mt-4 flex flex-wrap gap-2 text-sm">
-            <span className="rounded-full bg-slate-100 px-3 py-1">
-              {job.location}
-            </span>
-            <span className="rounded-full bg-slate-100 px-3 py-1">
-              {formatLabel(job.job_type)}
-            </span>
-            <span className="rounded-full bg-slate-100 px-3 py-1">
-              {formatLabel(job.experience_level)}
-            </span>
-            <span className="rounded-full bg-brand-50 px-3 py-1 font-medium text-brand-700">
-              {formatSalary(job.salary)}
-            </span>
+      <article className="card mt-6 p-8">
+        <header className="flex gap-4">
+          <div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-slate-100 dark:bg-slate-700">
+            {job.company.logo_url ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={job.company.logo_url} alt="" className="h-full w-full object-cover" />
+            ) : (
+              <span className="text-2xl font-bold text-brand-600">
+                {job.company.name.charAt(0)}
+              </span>
+            )}
+          </div>
+          <div>
+            <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-100">
+              {job.title}
+            </h1>
+            <Link
+              href={`/companies/${job.company.id}`}
+              className="mt-1 text-lg text-slate-600 hover:text-brand-600 dark:text-slate-400"
+            >
+              {job.company.name}
+            </Link>
+            <p className="mt-1 text-sm text-slate-500">
+              Posted {formatDate(job.created_at)}
+            </p>
           </div>
         </header>
 
-        <div className="mt-8 whitespace-pre-wrap text-slate-700 leading-relaxed">
+        <div className="mt-6 flex flex-wrap gap-2 text-sm">
+          <span className="rounded-full bg-slate-100 px-3 py-1 dark:bg-slate-700">
+            {job.location}
+          </span>
+          <span className="rounded-full bg-slate-100 px-3 py-1 dark:bg-slate-700">
+            {formatLabel(job.job_type)}
+          </span>
+          <span className="rounded-full bg-slate-100 px-3 py-1 dark:bg-slate-700">
+            {formatLabel(job.experience_level)}
+          </span>
+          {job.category && (
+            <span className="rounded-full bg-slate-100 px-3 py-1 dark:bg-slate-700">
+              {formatLabel(job.category)}
+            </span>
+          )}
+          <span className="rounded-full bg-brand-50 px-3 py-1 font-medium text-brand-700 dark:bg-brand-900/40 dark:text-brand-300">
+            {formatSalary(job.salary)}
+          </span>
+        </div>
+
+        {job.skills && (
+          <div className="mt-4">
+            <p className="text-sm font-medium text-slate-700 dark:text-slate-300">
+              Required skills
+            </p>
+            <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">{job.skills}</p>
+          </div>
+        )}
+
+        <div className="mt-8 whitespace-pre-wrap leading-relaxed text-slate-700 dark:text-slate-300">
           {job.description}
         </div>
 
-        {user?.role === "job_seeker" && job.is_active !== false && (
-          <div className="mt-8 space-y-4 border-t border-slate-200 pt-8">
+        {user?.role === "candidate" && job.is_active !== false && (
+          <div className="mt-8 space-y-4 border-t border-slate-200 pt-8 dark:border-slate-700">
             <div className="flex gap-3">
-              <button
-                type="button"
-                onClick={toggleSave}
-                className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
-              >
+              <button type="button" onClick={toggleSave} className="btn-secondary">
                 {savedJobId ? "Unsave job" : "Save job"}
               </button>
             </div>
 
             {!applied ? (
               <form onSubmit={handleApply} className="space-y-3">
-                <label htmlFor="cover" className="block text-sm font-medium text-slate-700">
+                <label htmlFor="cover" className="block text-sm font-medium text-slate-700 dark:text-slate-300">
                   Cover letter
                 </label>
                 <textarea
@@ -162,18 +191,19 @@ export default function JobDetailPage() {
                   value={coverLetter}
                   onChange={(e) => setCoverLetter(e.target.value)}
                   placeholder="Tell the recruiter why you're a great fit…"
-                  className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
+                  className="input"
                 />
-                <button
-                  type="submit"
-                  disabled={applying}
-                  className="rounded-lg bg-brand-600 px-6 py-2.5 text-sm font-medium text-white hover:bg-brand-700 disabled:opacity-60"
-                >
+                {user.candidate_profile?.resume_url && (
+                  <p className="text-xs text-slate-500">
+                    Your resume will be attached automatically.
+                  </p>
+                )}
+                <button type="submit" disabled={applying} className="btn-primary">
                   {applying ? "Submitting…" : "Apply now"}
                 </button>
               </form>
             ) : (
-              <p className="text-sm font-medium text-green-700">
+              <p className="text-sm font-medium text-green-700 dark:text-green-400">
                 You have applied for this job.
               </p>
             )}
@@ -181,18 +211,14 @@ export default function JobDetailPage() {
         )}
 
         {!user && job.is_active !== false && (
-          <div className="mt-8 border-t border-slate-200 pt-8">
-            <p className="text-sm text-slate-600">
+          <div className="mt-8 border-t border-slate-200 pt-8 dark:border-slate-700">
+            <p className="text-sm text-slate-600 dark:text-slate-400">
               <Link href="/login" className="text-brand-600 hover:underline">
                 Log in
               </Link>{" "}
-              as a job seeker to apply or save this job.
+              as a candidate to apply or save this job.
             </p>
           </div>
-        )}
-
-        {actionMessage && (
-          <p className="mt-4 text-sm text-slate-600">{actionMessage}</p>
         )}
       </article>
     </div>

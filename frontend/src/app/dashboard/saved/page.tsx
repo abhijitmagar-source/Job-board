@@ -18,7 +18,7 @@ export default function SavedJobsPage() {
 
   useEffect(() => {
     if (!authLoading && !user) router.replace("/login");
-    if (!authLoading && user && user.role !== "job_seeker") {
+    if (!authLoading && user && user.role !== "candidate") {
       router.replace("/dashboard");
     }
   }, [user, authLoading, router]);
@@ -31,7 +31,7 @@ export default function SavedJobsPage() {
   };
 
   useEffect(() => {
-    if (!user || user.role !== "job_seeker") return;
+    if (!user || user.role !== "candidate") return;
     loadSaved();
   }, [user]);
 

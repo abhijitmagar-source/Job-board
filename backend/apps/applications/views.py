@@ -106,7 +106,7 @@ class JobApplicantsView(generics.ListAPIView):
         job = self.get_job()
         return (
             Application.objects.filter(job=job)
-            .select_related("applicant", "applicant__profile")
+            .select_related("applicant", "applicant__candidate_profile")
             .order_by("-applied_at")
         )
 

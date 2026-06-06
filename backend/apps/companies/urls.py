@@ -1,8 +1,15 @@
+from django.urls import path
 from rest_framework.routers import DefaultRouter
 
-from apps.companies.views import CompanyViewSet
+from apps.companies import views
 
 router = DefaultRouter()
-router.register("companies", CompanyViewSet, basename="company")
+router.register("companies", views.CompanyViewSet, basename="company")
 
-urlpatterns = router.urls
+urlpatterns = [
+    path(
+        "companies/<int:pk>/upload-logo/",
+        views.CompanyLogoUploadView.as_view(),
+        name="company-upload-logo",
+    ),
+] + router.urls

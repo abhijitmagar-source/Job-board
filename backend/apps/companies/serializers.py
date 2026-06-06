@@ -13,6 +13,7 @@ class CompanySerializer(serializers.ModelSerializer):
             "name",
             "website",
             "description",
+            "location",
             "logo_url",
             "owner_email",
             "created_at",
@@ -24,4 +25,4 @@ class CompanySerializer(serializers.ModelSerializer):
 class CompanyBriefSerializer(serializers.ModelSerializer):
     class Meta:
         model = Company
-        fields = ("id", "name", "logo_url")
+        fields = ("id", "name", "logo_url", "location")

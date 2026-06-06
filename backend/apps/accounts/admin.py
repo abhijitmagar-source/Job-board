@@ -1,12 +1,19 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 
-from .models import Profile, User
+from .models import CandidateProfile, RecruiterProfile, User
 
 
-class ProfileInline(admin.StackedInline):
-    model = Profile
+class CandidateProfileInline(admin.StackedInline):
+    model = CandidateProfile
     can_delete = False
+    fk_name = "user"
+
+
+class RecruiterProfileInline(admin.StackedInline):
+    model = RecruiterProfile
+    can_delete = False
+    fk_name = "user"
 
 
 @admin.register(User)
@@ -30,10 +37,15 @@ class UserAdmin(BaseUserAdmin):
             },
         ),
     )
-    inlines = [ProfileInline]
 
 
-@admin.register(Profile)
-class ProfileAdmin(admin.ModelAdmin):
+@admin.register(CandidateProfile)
+class CandidateProfileAdmin(admin.ModelAdmin):
     list_display = ("full_name", "user", "phone")
     search_fields = ("full_name", "user__email")
+
+
+@admin.register(RecruiterProfile)
+class RecruiterProfileAdmin(admin.ModelAdmin):
+    list_display = ("name", "user", "company", "position")
+    search_fields = ("name", "user__email", "company")

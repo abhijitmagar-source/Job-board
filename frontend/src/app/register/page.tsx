@@ -15,7 +15,7 @@ export default function RegisterPage() {
     password: "",
     password_confirm: "",
     full_name: "",
-    role: "job_seeker" as UserRole,
+    role: "candidate" as UserRole,
   });
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -42,23 +42,23 @@ export default function RegisterPage() {
 
   return (
     <div className="mx-auto max-w-md px-4 py-12">
-      <h1 className="text-2xl font-bold text-slate-900">Create account</h1>
-      <p className="mt-2 text-sm text-slate-600">
+      <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Create account</h1>
+      <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
         Already have an account?{" "}
         <Link href="/login" className="text-brand-600 hover:underline">
           Log in
         </Link>
       </p>
 
-      <form onSubmit={handleSubmit} className="mt-8 space-y-4">
+      <form onSubmit={handleSubmit} className="card mt-8 space-y-4 p-6">
         {error && (
-          <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-800 dark:bg-red-900/20 dark:text-red-400">
             {error}
           </div>
         )}
 
         <div>
-          <label htmlFor="full_name" className="mb-1 block text-sm text-slate-600">
+          <label htmlFor="full_name" className="mb-1 block text-sm text-slate-600 dark:text-slate-400">
             Full name
           </label>
           <input
@@ -66,12 +66,12 @@ export default function RegisterPage() {
             required
             value={form.full_name}
             onChange={(e) => setForm({ ...form, full_name: e.target.value })}
-            className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
+            className="input"
           />
         </div>
 
         <div>
-          <label htmlFor="email" className="mb-1 block text-sm text-slate-600">
+          <label htmlFor="email" className="mb-1 block text-sm text-slate-600 dark:text-slate-400">
             Email
           </label>
           <input
@@ -80,29 +80,27 @@ export default function RegisterPage() {
             required
             value={form.email}
             onChange={(e) => setForm({ ...form, email: e.target.value })}
-            className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
+            className="input"
           />
         </div>
 
         <div>
-          <label htmlFor="role" className="mb-1 block text-sm text-slate-600">
+          <label htmlFor="role" className="mb-1 block text-sm text-slate-600 dark:text-slate-400">
             I am a
           </label>
           <select
             id="role"
             value={form.role}
-            onChange={(e) =>
-              setForm({ ...form, role: e.target.value as UserRole })
-            }
-            className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
+            onChange={(e) => setForm({ ...form, role: e.target.value as UserRole })}
+            className="input"
           >
-            <option value="job_seeker">Job seeker</option>
+            <option value="candidate">Candidate</option>
             <option value="recruiter">Recruiter</option>
           </select>
         </div>
 
         <div>
-          <label htmlFor="password" className="mb-1 block text-sm text-slate-600">
+          <label htmlFor="password" className="mb-1 block text-sm text-slate-600 dark:text-slate-400">
             Password
           </label>
           <input
@@ -112,15 +110,12 @@ export default function RegisterPage() {
             minLength={8}
             value={form.password}
             onChange={(e) => setForm({ ...form, password: e.target.value })}
-            className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
+            className="input"
           />
         </div>
 
         <div>
-          <label
-            htmlFor="password_confirm"
-            className="mb-1 block text-sm text-slate-600"
-          >
+          <label htmlFor="password_confirm" className="mb-1 block text-sm text-slate-600 dark:text-slate-400">
             Confirm password
           </label>
           <input
@@ -129,18 +124,12 @@ export default function RegisterPage() {
             required
             minLength={8}
             value={form.password_confirm}
-            onChange={(e) =>
-              setForm({ ...form, password_confirm: e.target.value })
-            }
-            className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
+            onChange={(e) => setForm({ ...form, password_confirm: e.target.value })}
+            className="input"
           />
         </div>
 
-        <button
-          type="submit"
-          disabled={submitting}
-          className="w-full rounded-lg bg-brand-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-brand-700 disabled:opacity-60"
-        >
+        <button type="submit" disabled={submitting} className="btn-primary w-full">
           {submitting ? "Creating account…" : "Sign up"}
         </button>
       </form>

@@ -8,7 +8,7 @@ REGISTER_EXAMPLE = OpenApiExample(
         "email": "seeker@example.com",
         "password": "SecurePass123!",
         "password_confirm": "SecurePass123!",
-        "role": "job_seeker",
+        "role": "candidate",
         "full_name": "Jane Doe",
     },
     request_only=True,

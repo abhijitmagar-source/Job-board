@@ -19,7 +19,7 @@ def test_register_and_login(api_client: Client) -> None:
                 "email": "newuser@example.com",
                 "password": "SecurePass123!",
                 "password_confirm": "SecurePass123!",
-                "role": "job_seeker",
+                "role": "candidate",
                 "full_name": "New User",
             }
         ),

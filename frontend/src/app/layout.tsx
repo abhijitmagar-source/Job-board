@@ -1,11 +1,14 @@
 import type { Metadata } from "next";
+import { Toaster } from "sonner";
 import { Header } from "@/components/Header";
 import { AuthProvider } from "@/context/AuthContext";
+import { ThemeProvider } from "@/context/ThemeContext";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Job Board",
-  description: "Find your next role — recruiters and job seekers",
+  title: "JobBoard — Find Your Next Role",
+  description:
+    "Premium job board for candidates and recruiters. Search, apply, and hire with confidence.",
 };
 
 export default function RootLayout({
@@ -14,12 +17,15 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <body className="min-h-screen antialiased">
-        <AuthProvider>
-          <Header />
-          <main>{children}</main>
-        </AuthProvider>
+        <ThemeProvider>
+          <AuthProvider>
+            <Header />
+            <main>{children}</main>
+            <Toaster position="top-right" richColors closeButton />
+          </AuthProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

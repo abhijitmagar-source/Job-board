@@ -2,8 +2,6 @@ from rest_framework.permissions import BasePermission
 
 
 class IsRecruiter(BasePermission):
-    """Allow access only to users with the recruiter role."""
-
     message = "Recruiter account required."
 
     def has_permission(self, request, view) -> bool:
@@ -14,14 +12,27 @@ class IsRecruiter(BasePermission):
         )
 
 
-class IsJobSeeker(BasePermission):
-    """Allow access only to users with the job seeker role."""
-
-    message = "Job seeker account required."
+class IsCandidate(BasePermission):
+    message = "Candidate account required."
 
     def has_permission(self, request, view) -> bool:
         return bool(
             request.user
             and request.user.is_authenticated
-            and request.user.is_job_seeker
+            and request.user.is_candidate
+        )
+
+
+class IsJobSeeker(IsCandidate):
+    """Backward-compatible alias."""
+
+
+class IsAdmin(BasePermission):
+    message = "Admin account required."
+
+    def has_permission(self, request, view) -> bool:
+        return bool(
+            request.user
+            and request.user.is_authenticated
+            and request.user.is_admin
         )

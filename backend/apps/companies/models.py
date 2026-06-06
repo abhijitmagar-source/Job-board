@@ -11,6 +11,7 @@ class Company(models.Model):
     name = models.CharField(max_length=255, db_index=True)
     website = models.URLField(max_length=255, blank=True)
     description = models.TextField(blank=True)
+    location = models.CharField(max_length=255, blank=True, db_index=True)
     logo_url = models.URLField(max_length=500, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

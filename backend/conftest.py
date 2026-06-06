@@ -20,7 +20,7 @@ def job_seeker(api_client: Client) -> dict:
         "email": "seeker-ci@example.com",
         "password": "SecurePass123!",
         "password_confirm": "SecurePass123!",
-        "role": "job_seeker",
+        "role": "candidate",
         "full_name": "CI Seeker",
     }
     response = api_client.post(

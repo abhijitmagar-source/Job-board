@@ -3,6 +3,14 @@ from .base import *  # noqa: F403
 
 DEBUG = False
 
+# PostgreSQL on Render
+DATABASES = {
+    "default": env.db(
+        "DATABASE_URL",
+        default="postgresql://jobboard:jobboard@localhost:5432/jobboard",
+    )
+}
+
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 SECURE_SSL_REDIRECT = env.bool("SECURE_SSL_REDIRECT", default=True)
 SESSION_COOKIE_SECURE = True

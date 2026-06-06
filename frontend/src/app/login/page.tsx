@@ -36,23 +36,23 @@ export default function LoginPage() {
 
   return (
     <div className="mx-auto max-w-md px-4 py-12">
-      <h1 className="text-2xl font-bold text-slate-900">Log in</h1>
-      <p className="mt-2 text-sm text-slate-600">
+      <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Log in</h1>
+      <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
         No account?{" "}
         <Link href="/register" className="text-brand-600 hover:underline">
           Sign up
         </Link>
       </p>
 
-      <form onSubmit={handleSubmit} className="mt-8 space-y-4">
+      <form onSubmit={handleSubmit} className="card mt-8 space-y-4 p-6">
         {error && (
-          <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-800 dark:bg-red-900/20 dark:text-red-400">
             {error}
           </div>
         )}
 
         <div>
-          <label htmlFor="email" className="mb-1 block text-sm text-slate-600">
+          <label htmlFor="email" className="mb-1 block text-sm text-slate-600 dark:text-slate-400">
             Email
           </label>
           <input
@@ -61,14 +61,19 @@ export default function LoginPage() {
             required
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
+            className="input"
           />
         </div>
 
         <div>
-          <label htmlFor="password" className="mb-1 block text-sm text-slate-600">
-            Password
-          </label>
+          <div className="mb-1 flex items-center justify-between">
+            <label htmlFor="password" className="text-sm text-slate-600 dark:text-slate-400">
+              Password
+            </label>
+            <Link href="/forgot-password" className="text-xs text-brand-600 hover:underline">
+              Forgot password?
+            </Link>
+          </div>
           <input
             id="password"
             type="password"
@@ -76,15 +81,11 @@ export default function LoginPage() {
             minLength={8}
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
+            className="input"
           />
         </div>
 
-        <button
-          type="submit"
-          disabled={submitting}
-          className="w-full rounded-lg bg-brand-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-brand-700 disabled:opacity-60"
-        >
+        <button type="submit" disabled={submitting} className="btn-primary w-full">
           {submitting ? "Logging in…" : "Log in"}
         </button>
       </form>
