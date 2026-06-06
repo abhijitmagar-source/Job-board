@@ -1,6 +1,6 @@
 from django.contrib.auth import get_user_model
-from django.core.exceptions import ValidationError
 from django.contrib.auth.tokens import default_token_generator
+from django.core.exceptions import ValidationError
 from django.utils.encoding import force_bytes, force_str
 from django.utils.http import urlsafe_base64_decode, urlsafe_base64_encode
 from drf_spectacular.utils import extend_schema, extend_schema_view
@@ -10,6 +10,7 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.throttling import ScopedRateThrottle
 from rest_framework.views import APIView
+
 # from rest_framework_simplejwt.serializers import TokenRefreshSerializer
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
