@@ -82,3 +82,13 @@ def test_apply_for_job(api_client: Client, recruiter: dict, job_seeker: dict) ->
     applicants = api_client.get(f"/api/v1/jobs/{job_id}/applicants/", **rec_headers)
     assert applicants.status_code == 200
     assert applicants.json()["count"] == 1
+
+    application_id = applicants.json()["results"][0]["id"]
+    status_update = api_client.patch(
+        f"/api/v1/applications/{application_id}/status/",
+        data=json.dumps({"status": "shortlisted"}),
+        content_type="application/json",
+        **rec_headers,
+    )
+    assert status_update.status_code == 200
+    assert status_update.json()["status"] == "shortlisted"

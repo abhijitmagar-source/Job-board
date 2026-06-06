@@ -1,3 +1,4 @@
+from django.core.exceptions import ValidationError
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
 from drf_spectacular.utils import extend_schema, extend_schema_view
@@ -72,7 +73,10 @@ class CompanyLogoUploadView(APIView):
         file = request.FILES.get("file")
         if not file:
             return Response({"detail": "No file provided."}, status=status.HTTP_400_BAD_REQUEST)
-        url = upload_file(file, "company-logos")
+        try:
+            url = upload_file(file, "company-logos")
+        except ValidationError as exc:
+            return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
         company.logo_url = url
         company.save(update_fields=["logo_url", "updated_at"])
         return Response(CompanySerializer(company).data)

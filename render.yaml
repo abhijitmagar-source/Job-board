@@ -5,6 +5,7 @@ services:
   - type: web
     name: job-board-api
     runtime: python
+    pythonVersion: "3.12"
     region: oregon
     plan: free
     rootDir: backend

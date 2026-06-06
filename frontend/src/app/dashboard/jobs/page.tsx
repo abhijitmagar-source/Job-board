@@ -76,7 +76,7 @@ export default function RecruiterJobsPage() {
         {jobs.map((job) => (
           <div key={job.id} className="relative">
             <JobCard job={job} showStatus />
-            <div className="absolute right-4 top-4 flex gap-3">
+            <div className="mt-2 flex flex-wrap gap-3 px-4 pb-4">
               <Link
                 href={`/dashboard/jobs/${job.id}/applicants`}
                 className="text-xs font-medium text-brand-600 hover:underline"
@@ -84,13 +84,21 @@ export default function RecruiterJobsPage() {
                 View applicants
               </Link>
               {job.is_active !== false && (
-                <button
-                  type="button"
-                  onClick={() => handleDelete(job.id)}
-                  className="text-xs font-medium text-red-600 hover:underline"
-                >
-                  Deactivate
-                </button>
+                <>
+                  <Link
+                    href={`/dashboard/jobs/${job.id}/edit`}
+                    className="text-xs font-medium text-slate-600 hover:underline dark:text-slate-400"
+                  >
+                    Edit
+                  </Link>
+                  <button
+                    type="button"
+                    onClick={() => handleDelete(job.id)}
+                    className="text-xs font-medium text-red-600 hover:underline"
+                  >
+                    Deactivate
+                  </button>
+                </>
               )}
             </div>
           </div>

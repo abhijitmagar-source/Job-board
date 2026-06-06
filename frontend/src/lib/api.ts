@@ -410,3 +410,51 @@ export async function getAdminApplications(): Promise<PaginatedResponse<Applicat
   const { data } = await client.get("/auth/admin/applications/");
   return data;
 }
+
+export async function updateAdminUser(
+  id: number,
+  payload: { role?: string; is_active?: boolean },
+): Promise<User> {
+  const { data } = await client.patch(`/auth/admin/users/${id}/`, payload);
+  return data;
+}
+
+export async function deleteAdminUser(id: number): Promise<void> {
+  await client.delete(`/auth/admin/users/${id}/`);
+}
+
+export async function updateAdminCompany(
+  id: number,
+  payload: Partial<Company>,
+): Promise<Company> {
+  const { data } = await client.patch(`/auth/admin/companies/${id}/`, payload);
+  return data;
+}
+
+export async function deleteAdminCompany(id: number): Promise<void> {
+  await client.delete(`/auth/admin/companies/${id}/`);
+}
+
+export async function updateAdminJob(
+  id: number,
+  payload: { is_featured?: boolean; is_active?: boolean; title?: string },
+): Promise<Job> {
+  const { data } = await client.patch(`/auth/admin/jobs/${id}/`, payload);
+  return data;
+}
+
+export async function deleteAdminJob(id: number): Promise<void> {
+  await client.delete(`/auth/admin/jobs/${id}/`);
+}
+
+export async function updateAdminApplication(
+  id: number,
+  payload: { status: string },
+): Promise<Application> {
+  const { data } = await client.patch(`/auth/admin/applications/${id}/`, payload);
+  return data;
+}
+
+export async function deleteAdminApplication(id: number): Promise<void> {
+  await client.delete(`/auth/admin/applications/${id}/`);
+}

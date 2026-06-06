@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { DashboardSkeleton } from "@/components/Skeleton";
 import { useAuth } from "@/context/AuthContext";
+import { toast } from "sonner";
 import {
   getAdminDashboard,
   getCandidateDashboard,
@@ -35,7 +36,7 @@ export default function DashboardPage() {
           : getCandidateDashboard;
     fetcher()
       .then(setStats)
-      .catch(() => {})
+      .catch(() => toast.error("Failed to load dashboard stats."))
       .finally(() => setStatsLoading(false));
   }, [user]);
 
@@ -59,7 +60,7 @@ export default function DashboardPage() {
 
       {!statsLoading && stats && (
         <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {isRecruiter && "jobs_total" in stats && (
+          {isRecruiter && "applicants_total" in stats && (
             <>
               <StatCard label="Total jobs" value={(stats as RecruiterDashboard).jobs_total} />
               <StatCard label="Active jobs" value={(stats as RecruiterDashboard).jobs_active} />
@@ -67,7 +68,7 @@ export default function DashboardPage() {
               <StatCard label="Applicants" value={(stats as RecruiterDashboard).applicants_total} />
             </>
           )}
-          {!isRecruiter && !isAdmin && "applications_total" in stats && (
+          {!isRecruiter && !isAdmin && "applications_pending" in stats && (
             <>
               <StatCard label="Applications" value={(stats as CandidateDashboard).applications_total} />
               <StatCard label="Pending" value={(stats as CandidateDashboard).applications_pending} />
@@ -136,6 +137,38 @@ export default function DashboardPage() {
           href="/jobs"
         />
       </div>
+
+      {!statsLoading && stats && "recent_applications" in stats && stats.recent_applications.length > 0 && (
+        <div className="mt-10">
+          <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">
+            Recent activity
+          </h2>
+          <div className="mt-4 space-y-3">
+            {stats.recent_applications.map((app) => (
+              <div key={app.id} className="card p-4 text-sm">
+                <p className="text-slate-700 dark:text-slate-300">
+                  <span className="font-medium">{app.job__title}</span>
+                  {"job__company__name" in app && (
+                    <>
+                      {" at "}
+                      {app.job__company__name}
+                    </>
+                  )}
+                  {"applicant__email" in app && (
+                    <>
+                      {" — applicant "}
+                      {app.applicant__email}
+                    </>
+                  )}
+                  <span className="ml-2 rounded-full bg-brand-50 px-2 py-0.5 text-xs text-brand-700 dark:bg-brand-900/40 dark:text-brand-300">
+                    {app.status}
+                  </span>
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

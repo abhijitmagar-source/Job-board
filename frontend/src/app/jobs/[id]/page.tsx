@@ -10,6 +10,7 @@ import {
   ApiError,
   applyForJob,
   getJob,
+  getMyApplications,
   getSavedJobs,
   saveJob,
   unsaveJob,
@@ -44,12 +45,24 @@ export default function JobDetailPage() {
         if (match) setSavedJobId(match.id);
       })
       .catch(() => {});
+
+    getMyApplications()
+      .then((data) => {
+        const hasApplied = data.results.some((a) => a.job.id === Number(id));
+        if (hasApplied) setApplied(true);
+      })
+      .catch(() => {});
   }, [user, id]);
 
   const handleApply = async (e: FormEvent) => {
     e.preventDefault();
     if (!user) {
       router.push("/login");
+      return;
+    }
+    if (!user.candidate_profile?.resume_url) {
+      toast.error("Please upload your resume in your profile before applying.");
+      router.push("/dashboard/profile");
       return;
     }
     setApplying(true);

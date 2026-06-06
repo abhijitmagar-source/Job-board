@@ -11,6 +11,17 @@ DATABASES = {
     )
 }
 
+# Fall back to in-process cache when Redis is not provisioned (e.g. Render free tier)
+if not env("REDIS_URL", default=""):
+    CACHES = {
+        "default": {
+            "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+            "LOCATION": "jobboard-prod",
+            "KEY_PREFIX": "jobboard",
+            "TIMEOUT": 300,
+        }
+    }
+
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 SECURE_SSL_REDIRECT = env.bool("SECURE_SSL_REDIRECT", default=True)
 SESSION_COOKIE_SECURE = True

@@ -22,6 +22,8 @@ function JobsContent() {
   const filters: JobFilters = {
     search: searchParams.get("search") ?? undefined,
     location: searchParams.get("location") ?? undefined,
+    skills: searchParams.get("skills") ?? undefined,
+    company: searchParams.get("company") ?? undefined,
     job_type: (searchParams.get("job_type") ?? undefined) as JobFilters["job_type"],
     experience_level: (searchParams.get("experience_level") ??
       undefined) as JobFilters["experience_level"],

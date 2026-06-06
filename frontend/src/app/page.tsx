@@ -5,13 +5,14 @@ import { useRouter } from "next/navigation";
 import { FormEvent, useEffect, useState } from "react";
 import { JobCard } from "@/components/JobCard";
 import { JobCardSkeleton } from "@/components/Skeleton";
-import { getJobs } from "@/lib/api";
+import { getCompanies, getJobs } from "@/lib/api";
 import type { Job } from "@/types";
 
 export default function HomePage() {
   const router = useRouter();
   const [featured, setFeatured] = useState<Job[]>([]);
   const [latest, setLatest] = useState<Job[]>([]);
+  const [stats, setStats] = useState({ jobs: 0, companies: 0, featured: 0 });
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [location, setLocation] = useState("");
@@ -20,10 +21,17 @@ export default function HomePage() {
     Promise.all([
       getJobs({ is_featured: "true", page_size: "4" }),
       getJobs({ page_size: "6", ordering: "-created_at" }),
+      getJobs({ page_size: "1" }),
+      getCompanies("1"),
     ])
-      .then(([featuredData, latestData]) => {
+      .then(([featuredData, latestData, allJobs, companiesData]) => {
         setFeatured(featuredData.results);
         setLatest(latestData.results);
+        setStats({
+          jobs: allJobs.count,
+          companies: companiesData.count,
+          featured: featuredData.count,
+        });
       })
       .catch(() => {})
       .finally(() => setLoading(false));
@@ -95,9 +103,9 @@ export default function HomePage() {
       <section className="border-b border-slate-200 bg-white py-10 dark:border-slate-700 dark:bg-slate-900">
         <div className="mx-auto grid max-w-4xl grid-cols-3 gap-8 px-4 text-center">
           {[
-            { label: "Open roles", value: "500+" },
-            { label: "Companies", value: "120+" },
-            { label: "Hires made", value: "2,400+" },
+            { label: "Open roles", value: loading ? "—" : String(stats.jobs) },
+            { label: "Companies", value: loading ? "—" : String(stats.companies) },
+            { label: "Featured roles", value: loading ? "—" : String(stats.featured) },
           ].map((stat) => (
             <div key={stat.label}>
               <p className="text-3xl font-bold text-brand-600 dark:text-brand-400">
@@ -167,14 +175,14 @@ export default function HomePage() {
             description="Build your profile, upload your resume, and apply to roles that match your skills."
             items={["Smart search & filters", "One-click apply", "Application tracking", "Save jobs for later"]}
             cta="Join as candidate"
-            href="/register"
+            href="/register?role=candidate"
           />
           <FeatureCard
             title="For recruiters"
             description="Post jobs, manage your company profile, and review applicants with full visibility."
             items={["Post & manage jobs", "Applicant tracking", "Status management", "Company branding"]}
             cta="Join as recruiter"
-            href="/register"
+            href="/register?role=recruiter"
           />
         </div>
       </section>

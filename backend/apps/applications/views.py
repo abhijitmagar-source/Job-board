@@ -145,7 +145,7 @@ class ApplicationStatusUpdateView(generics.UpdateAPIView):
         serializer.is_valid(raise_exception=True)
         serializer.save()
         application = (
-            Application.objects.select_related("applicant", "applicant__profile")
+            Application.objects.select_related("applicant", "applicant__candidate_profile")
             .get(pk=application.pk)
         )
         return Response(JobApplicantSerializer(application).data)

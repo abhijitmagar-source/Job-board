@@ -15,6 +15,14 @@ class JobSerializer(serializers.ModelSerializer):
     posted_by_email = serializers.EmailField(source="posted_by.email", read_only=True)
     is_saved = serializers.SerializerMethodField()
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        request = self.context.get("request")
+        if request and not (
+            request.user.is_authenticated and request.user.is_admin
+        ):
+            self.fields["is_featured"].read_only = True
+
     class Meta:
         model = Job
         fields = (

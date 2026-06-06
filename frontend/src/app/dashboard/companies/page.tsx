@@ -10,6 +10,7 @@ import {
   ApiError,
   createCompany,
   getMyCompanies,
+  updateCompany,
   uploadCompanyLogo,
 } from "@/lib/api";
 import type { Company } from "@/types";
@@ -20,11 +21,13 @@ export default function CompaniesPage() {
   const [companies, setCompanies] = useState<Company[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
+  const [editingId, setEditingId] = useState<number | null>(null);
   const [form, setForm] = useState({ name: "", website: "", description: "", location: "" });
 
   useEffect(() => {
-    if (!authLoading && (!user || user.role !== "recruiter")) {
-      router.replace("/login");
+    if (!authLoading && !user) router.replace("/login");
+    if (!authLoading && user && user.role !== "recruiter") {
+      router.replace("/dashboard");
     }
   }, [user, authLoading, router]);
 
@@ -49,6 +52,31 @@ export default function CompaniesPage() {
     }
   };
 
+  const handleUpdate = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!editingId) return;
+    try {
+      const updated = await updateCompany(editingId, form);
+      setCompanies((prev) => prev.map((c) => (c.id === editingId ? updated : c)));
+      setEditingId(null);
+      setForm({ name: "", website: "", description: "", location: "" });
+      toast.success("Company updated!");
+    } catch (err) {
+      toast.error(err instanceof ApiError ? err.message : "Update failed.");
+    }
+  };
+
+  const startEdit = (company: Company) => {
+    setEditingId(company.id);
+    setShowForm(false);
+    setForm({
+      name: company.name,
+      website: company.website ?? "",
+      description: company.description ?? "",
+      location: company.location ?? "",
+    });
+  };
+
   const handleLogoUpload = async (companyId: number, file: File) => {
     try {
       const updated = await uploadCompanyLogo(companyId, file);
@@ -71,6 +99,53 @@ export default function CompaniesPage() {
           {showForm ? "Cancel" : "Add company"}
         </button>
       </div>
+
+      {editingId && (
+        <form onSubmit={handleUpdate} className="card mt-6 space-y-4 p-6">
+          <h2 className="font-semibold text-slate-900 dark:text-slate-100">Edit company</h2>
+          <input
+            required
+            placeholder="Company name"
+            value={form.name}
+            onChange={(e) => setForm({ ...form, name: e.target.value })}
+            className="input"
+          />
+          <input
+            placeholder="Website"
+            value={form.website}
+            onChange={(e) => setForm({ ...form, website: e.target.value })}
+            className="input"
+          />
+          <input
+            placeholder="Location"
+            value={form.location}
+            onChange={(e) => setForm({ ...form, location: e.target.value })}
+            className="input"
+          />
+          <textarea
+            placeholder="Description"
+            value={form.description}
+            onChange={(e) => setForm({ ...form, description: e.target.value })}
+            className="input"
+            rows={3}
+          />
+          <div className="flex gap-2">
+            <button type="submit" className="btn-primary">
+              Save changes
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setEditingId(null);
+                setForm({ name: "", website: "", description: "", location: "" });
+              }}
+              className="btn-secondary"
+            >
+              Cancel
+            </button>
+          </div>
+        </form>
+      )}
 
       {showForm && (
         <form onSubmit={handleCreate} className="card mt-6 space-y-4 p-6">
@@ -136,18 +211,27 @@ export default function CompaniesPage() {
                   {company.location && (
                     <p className="text-sm text-slate-600 dark:text-slate-400">{company.location}</p>
                   )}
-                  <label className="mt-3 inline-block cursor-pointer text-sm text-brand-600 hover:underline">
-                    Upload logo
-                    <input
-                      type="file"
-                      accept="image/*"
-                      className="hidden"
-                      onChange={(e) => {
-                        const file = e.target.files?.[0];
-                        if (file) handleLogoUpload(company.id, file);
-                      }}
-                    />
-                  </label>
+                  <div className="mt-3 flex flex-wrap gap-4">
+                    <button
+                      type="button"
+                      onClick={() => startEdit(company)}
+                      className="text-sm text-brand-600 hover:underline"
+                    >
+                      Edit details
+                    </button>
+                    <label className="cursor-pointer text-sm text-brand-600 hover:underline">
+                      Upload logo
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) handleLogoUpload(company.id, file);
+                        }}
+                      />
+                    </label>
+                  </div>
                 </div>
               </div>
             </div>

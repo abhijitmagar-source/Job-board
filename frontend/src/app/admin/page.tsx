@@ -2,15 +2,25 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { toast } from "sonner";
 import { DashboardSkeleton } from "@/components/Skeleton";
 import { useAuth } from "@/context/AuthContext";
 import {
+  deleteAdminApplication,
+  deleteAdminCompany,
+  deleteAdminJob,
+  deleteAdminUser,
   getAdminApplications,
   getAdminCompanies,
   getAdminDashboard,
   getAdminJobs,
   getAdminUsers,
+  updateAdminApplication,
+  updateAdminJob,
+  updateAdminUser,
 } from "@/lib/api";
+import { ApiError } from "@/lib/api";
+import { APPLICATION_STATUS_OPTIONS } from "@/types";
 import type { AdminDashboard, Application, Company, Job, User } from "@/types";
 
 type Tab = "overview" | "users" | "companies" | "jobs" | "applications";
@@ -32,20 +42,27 @@ export default function AdminPage() {
     }
   }, [user, authLoading, router]);
 
+  const loadTab = async (currentTab: Tab) => {
+    setLoading(true);
+    try {
+      if (currentTab === "overview") setStats(await getAdminDashboard());
+      if (currentTab === "users") setUsers((await getAdminUsers()).results);
+      if (currentTab === "companies") setCompanies((await getAdminCompanies()).results);
+      if (currentTab === "jobs") setJobs((await getAdminJobs()).results);
+      if (currentTab === "applications") {
+        setApplications((await getAdminApplications()).results);
+      }
+    } catch (err) {
+      toast.error(err instanceof ApiError ? err.message : "Failed to load data.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
     if (!user || user.role !== "admin") return;
-    setLoading(true);
-    const loaders: Record<Tab, () => Promise<void>> = {
-      overview: async () => setStats(await getAdminDashboard()),
-      users: async () => setUsers((await getAdminUsers()).results),
-      companies: async () => setCompanies((await getAdminCompanies()).results),
-      jobs: async () => setJobs((await getAdminJobs()).results),
-      applications: async () =>
-        setApplications((await getAdminApplications()).results),
-    };
-    loaders[tab]()
-      .catch(() => {})
-      .finally(() => setLoading(false));
+    loadTab(tab);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, tab]);
 
   if (authLoading || !user) {
@@ -103,40 +120,275 @@ export default function AdminPage() {
         )}
 
         {!loading && tab === "users" && (
-          <DataTable
-            headers={["Email", "Role", "Joined"]}
-            rows={users.map((u) => [u.email, u.role, u.date_joined?.slice(0, 10) ?? ""])}
-          />
+          <div className="card overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-slate-200 dark:border-slate-700">
+                  <th className="px-4 py-3 text-left">Email</th>
+                  <th className="px-4 py-3 text-left">Role</th>
+                  <th className="px-4 py-3 text-left">Active</th>
+                  <th className="px-4 py-3 text-left">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {users.map((u) => (
+                  <tr key={u.id} className="border-b border-slate-100 dark:border-slate-800">
+                    <td className="px-4 py-3">{u.email}</td>
+                    <td className="px-4 py-3">
+                      <select
+                        value={u.role}
+                        onChange={async (e) => {
+                          try {
+                            await updateAdminUser(u.id, { role: e.target.value });
+                            setUsers((prev) =>
+                              prev.map((item) =>
+                                item.id === u.id ? { ...item, role: e.target.value as User["role"] } : item,
+                              ),
+                            );
+                            toast.success("User role updated.");
+                          } catch (err) {
+                            toast.error(err instanceof ApiError ? err.message : "Update failed.");
+                          }
+                        }}
+                        className="input !py-1 text-xs"
+                      >
+                        <option value="candidate">Candidate</option>
+                        <option value="recruiter">Recruiter</option>
+                        <option value="admin">Admin</option>
+                      </select>
+                    </td>
+                    <td className="px-4 py-3">
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          try {
+                            await updateAdminUser(u.id, { is_active: false });
+                            setUsers((prev) => prev.filter((item) => item.id !== u.id));
+                            toast.success("User deactivated.");
+                          } catch (err) {
+                            toast.error(err instanceof ApiError ? err.message : "Update failed.");
+                          }
+                        }}
+                        className="text-xs text-red-600 hover:underline"
+                      >
+                        Deactivate
+                      </button>
+                    </td>
+                    <td className="px-4 py-3">
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          if (!confirm(`Delete ${u.email}?`)) return;
+                          try {
+                            await deleteAdminUser(u.id);
+                            setUsers((prev) => prev.filter((item) => item.id !== u.id));
+                            toast.success("User deleted.");
+                          } catch (err) {
+                            toast.error(err instanceof ApiError ? err.message : "Delete failed.");
+                          }
+                        }}
+                        className="text-xs text-red-600 hover:underline"
+                      >
+                        Delete
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
 
         {!loading && tab === "companies" && (
-          <DataTable
-            headers={["Name", "Location", "Owner"]}
-            rows={companies.map((c) => [c.name, c.location, c.owner_email ?? ""])}
-          />
+          <div className="card overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-slate-200 dark:border-slate-700">
+                  <th className="px-4 py-3 text-left">Name</th>
+                  <th className="px-4 py-3 text-left">Location</th>
+                  <th className="px-4 py-3 text-left">Owner</th>
+                  <th className="px-4 py-3 text-left">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {companies.map((c) => (
+                  <tr key={c.id} className="border-b border-slate-100 dark:border-slate-800">
+                    <td className="px-4 py-3">{c.name}</td>
+                    <td className="px-4 py-3">{c.location}</td>
+                    <td className="px-4 py-3">{c.owner_email}</td>
+                    <td className="px-4 py-3">
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          if (!confirm(`Delete ${c.name}?`)) return;
+                          try {
+                            await deleteAdminCompany(c.id);
+                            setCompanies((prev) => prev.filter((item) => item.id !== c.id));
+                            toast.success("Company deleted.");
+                          } catch (err) {
+                            toast.error(err instanceof ApiError ? err.message : "Delete failed.");
+                          }
+                        }}
+                        className="text-xs text-red-600 hover:underline"
+                      >
+                        Delete
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
 
         {!loading && tab === "jobs" && (
-          <DataTable
-            headers={["Title", "Company", "Location", "Active"]}
-            rows={jobs.map((j) => [
-              j.title,
-              j.company.name,
-              j.location,
-              j.is_active ? "Yes" : "No",
-            ])}
-          />
+          <div className="card overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-slate-200 dark:border-slate-700">
+                  <th className="px-4 py-3 text-left">Title</th>
+                  <th className="px-4 py-3 text-left">Company</th>
+                  <th className="px-4 py-3 text-left">Featured</th>
+                  <th className="px-4 py-3 text-left">Active</th>
+                  <th className="px-4 py-3 text-left">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {jobs.map((j) => (
+                  <tr key={j.id} className="border-b border-slate-100 dark:border-slate-800">
+                    <td className="px-4 py-3">{j.title}</td>
+                    <td className="px-4 py-3">{j.company.name}</td>
+                    <td className="px-4 py-3">
+                      <input
+                        type="checkbox"
+                        checked={j.is_featured ?? false}
+                        onChange={async (e) => {
+                          try {
+                            await updateAdminJob(j.id, { is_featured: e.target.checked });
+                            setJobs((prev) =>
+                              prev.map((item) =>
+                                item.id === j.id
+                                  ? { ...item, is_featured: e.target.checked }
+                                  : item,
+                              ),
+                            );
+                          } catch (err) {
+                            toast.error(err instanceof ApiError ? err.message : "Update failed.");
+                          }
+                        }}
+                      />
+                    </td>
+                    <td className="px-4 py-3">{j.is_active ? "Yes" : "No"}</td>
+                    <td className="px-4 py-3">
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          try {
+                            await updateAdminJob(j.id, { is_active: false });
+                            setJobs((prev) =>
+                              prev.map((item) =>
+                                item.id === j.id ? { ...item, is_active: false } : item,
+                              ),
+                            );
+                            toast.success("Job deactivated.");
+                          } catch (err) {
+                            toast.error(err instanceof ApiError ? err.message : "Update failed.");
+                          }
+                        }}
+                        className="mr-3 text-xs text-amber-600 hover:underline"
+                      >
+                        Deactivate
+                      </button>
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          if (!confirm(`Delete ${j.title}?`)) return;
+                          try {
+                            await deleteAdminJob(j.id);
+                            setJobs((prev) => prev.filter((item) => item.id !== j.id));
+                            toast.success("Job deleted.");
+                          } catch (err) {
+                            toast.error(err instanceof ApiError ? err.message : "Delete failed.");
+                          }
+                        }}
+                        className="text-xs text-red-600 hover:underline"
+                      >
+                        Delete
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
 
         {!loading && tab === "applications" && (
-          <DataTable
-            headers={["Job", "Status", "Applied"]}
-            rows={applications.map((a) => [
-              a.job.title,
-              a.status_display,
-              a.applied_at.slice(0, 10),
-            ])}
-          />
+          <div className="card overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-slate-200 dark:border-slate-700">
+                  <th className="px-4 py-3 text-left">Job</th>
+                  <th className="px-4 py-3 text-left">Status</th>
+                  <th className="px-4 py-3 text-left">Applied</th>
+                  <th className="px-4 py-3 text-left">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {applications.map((a) => (
+                  <tr key={a.id} className="border-b border-slate-100 dark:border-slate-800">
+                    <td className="px-4 py-3">{a.job.title}</td>
+                    <td className="px-4 py-3">
+                      <select
+                        value={a.status}
+                        onChange={async (e) => {
+                          try {
+                            await updateAdminApplication(a.id, { status: e.target.value });
+                            setApplications((prev) =>
+                              prev.map((item) =>
+                                item.id === a.id
+                                  ? { ...item, status: e.target.value as Application["status"] }
+                                  : item,
+                              ),
+                            );
+                            toast.success("Status updated.");
+                          } catch (err) {
+                            toast.error(err instanceof ApiError ? err.message : "Update failed.");
+                          }
+                        }}
+                        className="input !py-1 text-xs"
+                      >
+                        {APPLICATION_STATUS_OPTIONS.map((opt) => (
+                          <option key={opt.value} value={opt.value}>
+                            {opt.label}
+                          </option>
+                        ))}
+                      </select>
+                    </td>
+                    <td className="px-4 py-3">{a.applied_at.slice(0, 10)}</td>
+                    <td className="px-4 py-3">
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          if (!confirm("Delete this application?")) return;
+                          try {
+                            await deleteAdminApplication(a.id);
+                            setApplications((prev) => prev.filter((item) => item.id !== a.id));
+                            toast.success("Application deleted.");
+                          } catch (err) {
+                            toast.error(err instanceof ApiError ? err.message : "Delete failed.");
+                          }
+                        }}
+                        className="text-xs text-red-600 hover:underline"
+                      >
+                        Delete
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
       </div>
     </div>
@@ -148,35 +400,6 @@ function StatCard({ label, value }: { label: string; value: number }) {
     <div className="card p-6">
       <p className="text-sm text-slate-600 dark:text-slate-400">{label}</p>
       <p className="mt-1 text-2xl font-bold text-brand-600 dark:text-brand-400">{value}</p>
-    </div>
-  );
-}
-
-function DataTable({ headers, rows }: { headers: string[]; rows: string[][] }) {
-  return (
-    <div className="card overflow-x-auto">
-      <table className="w-full text-sm">
-        <thead>
-          <tr className="border-b border-slate-200 dark:border-slate-700">
-            {headers.map((h) => (
-              <th key={h} className="px-4 py-3 text-left font-medium text-slate-600 dark:text-slate-400">
-                {h}
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((row, i) => (
-            <tr key={i} className="border-b border-slate-100 dark:border-slate-800">
-              {row.map((cell, j) => (
-                <td key={j} className="px-4 py-3 text-slate-900 dark:text-slate-100">
-                  {cell}
-                </td>
-              ))}
-            </tr>
-          ))}
-        </tbody>
-      </table>
     </div>
   );
 }

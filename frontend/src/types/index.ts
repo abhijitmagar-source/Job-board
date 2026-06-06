@@ -54,6 +54,7 @@ export interface User {
   id: number;
   email: string;
   role: UserRole;
+  is_active?: boolean;
   date_joined?: string;
   candidate_profile?: CandidateProfile;
   recruiter_profile?: RecruiterProfile;

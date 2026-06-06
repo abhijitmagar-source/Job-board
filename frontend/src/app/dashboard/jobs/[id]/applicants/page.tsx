@@ -21,8 +21,9 @@ export default function JobApplicantsPage() {
   const [statusFilter, setStatusFilter] = useState("");
 
   useEffect(() => {
-    if (!authLoading && (!user || user.role !== "recruiter")) {
-      router.replace("/login");
+    if (!authLoading && !user) router.replace("/login");
+    if (!authLoading && user && user.role !== "recruiter") {
+      router.replace("/dashboard");
     }
   }, [user, authLoading, router]);
 

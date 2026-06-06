@@ -17,12 +17,15 @@ export function JobFiltersPanel() {
   const current: JobFilters = {
     search: searchParams.get("search") ?? "",
     location: searchParams.get("location") ?? "",
+    skills: searchParams.get("skills") ?? "",
+    company: searchParams.get("company") ?? "",
     job_type: (searchParams.get("job_type") ?? "") as JobFilters["job_type"],
     experience_level: (searchParams.get("experience_level") ??
       "") as JobFilters["experience_level"],
     category: (searchParams.get("category") ?? "") as JobFilters["category"],
     salary_min: searchParams.get("salary_min") ?? "",
     salary_max: searchParams.get("salary_max") ?? "",
+    is_featured: searchParams.get("is_featured") ?? "",
     ordering: searchParams.get("ordering") ?? "-created_at",
   };
 
@@ -39,11 +42,14 @@ export function JobFiltersPanel() {
       const params = new URLSearchParams();
       if (next.search) params.set("search", next.search);
       if (next.location) params.set("location", next.location);
+      if (next.skills) params.set("skills", next.skills);
+      if (next.company) params.set("company", next.company);
       if (next.job_type) params.set("job_type", next.job_type);
       if (next.experience_level) params.set("experience_level", next.experience_level);
       if (next.category) params.set("category", next.category);
       if (next.salary_min) params.set("salary_min", next.salary_min);
       if (next.salary_max) params.set("salary_max", next.salary_max);
+      if (next.is_featured) params.set("is_featured", next.is_featured);
       if (next.ordering && next.ordering !== "-created_at") {
         params.set("ordering", next.ordering);
       }
@@ -56,11 +62,14 @@ export function JobFiltersPanel() {
     setDraft({
       search: "",
       location: "",
+      skills: "",
+      company: "",
       job_type: "",
       experience_level: "",
       category: "",
       salary_min: "",
       salary_max: "",
+      is_featured: "",
       ordering: "-created_at",
     });
     router.push("/jobs");
@@ -88,6 +97,34 @@ export function JobFiltersPanel() {
           placeholder="Title, skills, company…"
           value={draft.search}
           onChange={(e) => setDraft({ ...draft, search: e.target.value })}
+          className="input"
+        />
+      </div>
+
+      <div>
+        <label htmlFor="skills" className="mb-1 block text-sm text-slate-600 dark:text-slate-400">
+          Skills
+        </label>
+        <input
+          id="skills"
+          type="text"
+          placeholder="Python, React…"
+          value={draft.skills}
+          onChange={(e) => setDraft({ ...draft, skills: e.target.value })}
+          className="input"
+        />
+      </div>
+
+      <div>
+        <label htmlFor="company" className="mb-1 block text-sm text-slate-600 dark:text-slate-400">
+          Company
+        </label>
+        <input
+          id="company"
+          type="text"
+          placeholder="Company name"
+          value={draft.company}
+          onChange={(e) => setDraft({ ...draft, company: e.target.value })}
           className="input"
         />
       </div>
@@ -226,6 +263,18 @@ export function JobFiltersPanel() {
           ))}
         </select>
       </div>
+
+      <label className="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300">
+        <input
+          type="checkbox"
+          checked={draft.is_featured === "true"}
+          onChange={(e) =>
+            setDraft({ ...draft, is_featured: e.target.checked ? "true" : "" })
+          }
+          className="rounded border-slate-300 text-brand-600 focus:ring-brand-500"
+        />
+        Featured jobs only
+      </label>
 
       <div className="flex gap-2 pt-1">
         <button type="submit" className="btn-primary flex-1">

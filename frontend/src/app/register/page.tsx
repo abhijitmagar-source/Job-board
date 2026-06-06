@@ -1,21 +1,31 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { FormEvent, useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { FormEvent, Suspense, useEffect, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { ApiError } from "@/lib/api";
-import type { UserRole } from "@/types";
-
-export default function RegisterPage() {
+function RegisterForm() {
   const { register, user } = useAuth();
   const router = useRouter();
-  const [form, setForm] = useState({
+  const searchParams = useSearchParams();
+  const roleParam = searchParams.get("role");
+  type RegisterRole = "candidate" | "recruiter";
+  const initialRole: RegisterRole =
+    roleParam === "recruiter" ? "recruiter" : "candidate";
+
+  const [form, setForm] = useState<{
+    email: string;
+    password: string;
+    password_confirm: string;
+    full_name: string;
+    role: RegisterRole;
+  }>({
     email: "",
     password: "",
     password_confirm: "",
     full_name: "",
-    role: "candidate" as UserRole,
+    role: initialRole,
   });
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -91,7 +101,9 @@ export default function RegisterPage() {
           <select
             id="role"
             value={form.role}
-            onChange={(e) => setForm({ ...form, role: e.target.value as UserRole })}
+            onChange={(e) =>
+              setForm({ ...form, role: e.target.value as RegisterRole })
+            }
             className="input"
           >
             <option value="candidate">Candidate</option>
@@ -134,5 +146,13 @@ export default function RegisterPage() {
         </button>
       </form>
     </div>
+  );
+}
+
+export default function RegisterPage() {
+  return (
+    <Suspense fallback={<div className="px-4 py-12 text-center text-slate-500">Loading…</div>}>
+      <RegisterForm />
+    </Suspense>
   );
 }

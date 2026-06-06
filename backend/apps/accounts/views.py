@@ -1,4 +1,5 @@
 from django.contrib.auth import get_user_model
+from django.core.exceptions import ValidationError
 from django.contrib.auth.tokens import default_token_generator
 from django.utils.encoding import force_bytes, force_str
 from django.utils.http import urlsafe_base64_decode, urlsafe_base64_encode
@@ -219,7 +220,10 @@ class UploadResumeView(APIView):
         file = request.FILES.get("file")
         if not file:
             return Response({"detail": "No file provided."}, status=status.HTTP_400_BAD_REQUEST)
-        url = upload_file(file, "resumes")
+        try:
+            url = upload_file(file, "resumes")
+        except ValidationError as exc:
+            return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
         profile, _ = CandidateProfile.objects.get_or_create(
             user=request.user, defaults={"full_name": request.user.email}
         )
@@ -238,7 +242,10 @@ class UploadProfileImageView(APIView):
         file = request.FILES.get("file")
         if not file:
             return Response({"detail": "No file provided."}, status=status.HTTP_400_BAD_REQUEST)
-        url = upload_file(file, "profile-images")
+        try:
+            url = upload_file(file, "profile-images")
+        except ValidationError as exc:
+            return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
         profile, _ = CandidateProfile.objects.get_or_create(
             user=request.user, defaults={"full_name": request.user.email}
         )
