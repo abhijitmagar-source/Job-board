@@ -1,4 +1,4 @@
-"""Use PyMySQL as MySQLdb driver (pure Python — no system libmysqlclient required)."""
-import pymysql
+# """Use PyMySQL as MySQLdb driver (pure Python — no system libmysqlclient required)."""
+# import pymysql
 
-pymysql.install_as_MySQLdb()
+# pymysql.install_as_MySQLdb()
