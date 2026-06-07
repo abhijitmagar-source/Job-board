@@ -133,7 +133,7 @@ export default function NewJobPage() {
             placeholder="Company name"
             value={companyName}
             onChange={(e) => setCompanyName(e.target.value)}
-            className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+            className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900"
           />
           <div className="flex gap-2">
             <button type="submit" className="rounded-lg bg-brand-600 px-4 py-2 text-sm text-white">
@@ -142,7 +142,7 @@ export default function NewJobPage() {
             <button
               type="button"
               onClick={() => setShowCompanyForm(false)}
-              className="rounded-lg border border-slate-300 px-4 py-2 text-sm"
+              className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm text-slate-900"
             >
               Cancel
             </button>
@@ -161,7 +161,7 @@ export default function NewJobPage() {
               required
               value={form.company_id}
               onChange={(e) => setForm({ ...form, company_id: e.target.value })}
-              className="flex-1 rounded-lg border border-slate-300 px-3 py-2 text-sm"
+              className="flex-1 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900"
             >
               <option value="">Select company</option>
               {companies.map((c) => (
@@ -173,7 +173,7 @@ export default function NewJobPage() {
             <button
               type="button"
               onClick={() => setShowCompanyForm(true)}
-              className="rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-600"
+              className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-600"
             >
               + New
             </button>
@@ -189,7 +189,7 @@ export default function NewJobPage() {
             required
             value={form.title}
             onChange={(e) => setForm({ ...form, title: e.target.value })}
-            className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+            className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900"
           />
         </div>
 
@@ -202,7 +202,7 @@ export default function NewJobPage() {
             required
             value={form.location}
             onChange={(e) => setForm({ ...form, location: e.target.value })}
-            className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+            className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900"
           />
         </div>
 
@@ -217,7 +217,7 @@ export default function NewJobPage() {
               onChange={(e) =>
                 setForm({ ...form, job_type: e.target.value as JobType })
               }
-              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+              className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900"
             >
               {JOB_TYPE_OPTIONS.map((opt) => (
                 <option key={opt.value} value={opt.value}>
@@ -239,7 +239,7 @@ export default function NewJobPage() {
                   experience_level: e.target.value as ExperienceLevel,
                 })
               }
-              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+              className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900"
             >
               {EXPERIENCE_OPTIONS.map((opt) => (
                 <option key={opt.value} value={opt.value}>
@@ -260,7 +260,7 @@ export default function NewJobPage() {
             onChange={(e) =>
               setForm({ ...form, category: e.target.value as JobCategory })
             }
-            className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+            className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900"
           >
             {CATEGORY_OPTIONS.map((opt) => (
               <option key={opt.value} value={opt.value}>
@@ -279,7 +279,7 @@ export default function NewJobPage() {
             value={form.skills}
             onChange={(e) => setForm({ ...form, skills: e.target.value })}
             placeholder="Python, Django, React"
-            className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+            className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900"
           />
         </div>
 
@@ -293,7 +293,7 @@ export default function NewJobPage() {
             min="0"
             value={form.salary}
             onChange={(e) => setForm({ ...form, salary: e.target.value })}
-            className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+            className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900"
           />
         </div>
 
@@ -307,7 +307,7 @@ export default function NewJobPage() {
             rows={8}
             value={form.description}
             onChange={(e) => setForm({ ...form, description: e.target.value })}
-            className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+            className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900"
           />
         </div>
 
